@@ -46,12 +46,11 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
-          # Link ini secara otomatis akan selalu mengarah ke versi stable terbaru
           $url = "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe"
           $installer = "$env:TEMP\tailscale.exe"
           
           Write-Host "Downloading the latest Tailscale version..."
-          Invoke-WebRequest $url -OutFile$installer
+          Invoke-WebRequest -Uri $url -OutFile $installer
 
           Write-Host "Installing Tailscale..."
           $p = Start-Process `
@@ -100,4 +99,15 @@ jobs:
           Get-Service TermService | Select-Object Status, Name
 
           Write-Host "=== Display Adapters ==="
-          Get-CimInstance Win32
+          Get-CimInstance Win32_VideoController |
+            Select-Object Name, DriverVersion, CurrentRefreshRate
+
+          Write-Host "Target: 90 FPS / 90 Hz"
+          Write-Host "Actual performance is not guaranteed depending on GitHub Runner specs."
+
+      - name: Keep Runner Alive
+        shell: powershell
+        run: |
+          Write-Host "Runner is active. Connect to the Tailscale IP address shown above."
+          Write-Host "Keeping job alive for 5.5 hours (20000 seconds)..."
+          Start-Sleep -Seconds 20000
