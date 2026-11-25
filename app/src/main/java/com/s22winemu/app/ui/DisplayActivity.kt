@@ -17,6 +17,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,20 +64,12 @@ class DisplayActivity : ComponentActivity() {
         // Terapkan CPU affinity untuk thread display & emulator
         NativeBridge.nativeSetCpuAffinity(cpuMask)
 
-        // Siapkan log & eksekusi runtime jika rootfs/box64 binary tersedia
-        val logsDir = File(filesDir, "logs").apply { mkdirs() }
-        val logFile = File(logsDir, "wine_boot.log")
-        val box64Bin = File(filesDir, "rootfs/usr/local/bin/box64")
-        val runtimePid = if (box64Bin.exists() && box64Bin.canExecute()) {
-            NativeBridge.nativeLaunchRuntime(
-                envPairs.toTypedArray(),
-                filesDir.absolutePath,
-                box64Bin.absolutePath,
-                logFile.absolutePath
-            )
-        } else {
-            -1
-        }
+        // Box64 tanpa argumen Wine/PRoot dan rootfs bukan runtime Windows yang siap dipakai.
+        val runtimeRoot = File(filesDir, "rootfs")
+        val box64Bin = File(runtimeRoot, "usr/local/bin/box64")
+        val wineBin = File(runtimeRoot, "usr/bin/wine")
+        val runtimeReady = box64Bin.canExecute() && wineBin.canExecute()
+        val runtimePid = -1
 
         setContent {
             S22WinEmuTheme {
@@ -113,9 +107,11 @@ private fun WindowsDesktopDisplayScreen(
 ) {
     var cursorPos by remember { mutableStateOf(Offset(500f, 300f)) }
     var showGamepad by remember { mutableStateOf(true) }
-    var showConsole by remember { mutableStateOf(true) }
+    var showConsole by remember { mutableStateOf(false) }
+    var showStartMenu by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     var tempC by remember { mutableFloatStateOf(40.0f) }
-    var fps by remember { mutableIntStateOf(60) }
+    
     var lastPressedButton by remember { mutableStateOf("Siap") }
 
     val bootLog = remember(envPairs, runtimePid) {
@@ -128,11 +124,15 @@ private fun WindowsDesktopDisplayScreen(
             add("[RUNTIME] Backend selected: $runtimeBackend")
             if (runtimeBackend == "PROTON") add("[WARN] Proton backend is experimental and requires a compatible Android Proton/Wine package.")
             add("[WINE] Target Executable: $exePath")
-            if (runtimePid > 0) {
-                add("[PROC] Box64/Wine PID: $runtimePid berjalan aktif")
+            if (runtimeReady) {
+                add("[CHECK] Box64 dan Wine ditemukan; launcher PRoot/container belum dikonfigurasi.")
             } else {
-                add("[INFO] Mode Desktop & Input Bridge aktif. Unduh/ekstrak RootFS Wine+Box64 di menu Driver/Google untuk eksekusi native penuh.")
+                add("[ERROR] Runtime Windows belum terpasang lengkap.")
+                add("[CHECK] Box64: ${if (box64Bin.canExecute()) "OK" else "TIDAK ADA"}")
+                add("[CHECK] Wine: ${if (wineBin.canExecute()) "OK" else "TIDAK ADA"}")
+                add("[INFO] Layar ini adalah shell UI, bukan desktop Windows yang sedang berjalan.")
             }
+            add("[INFO] File EXE tidak akan dijalankan sampai runtime Wine + Box64 + rootfs + PRoot tersedia.")
             add("--- Environment Variables ---")
             addAll(envPairs.take(12))
         }
@@ -142,7 +142,6 @@ private fun WindowsDesktopDisplayScreen(
         while (true) {
             delay(1500)
             tempC = runCatching { NativeBridge.nativeReadTemperature() }.getOrDefault(41.2f)
-            fps = (56..60).random()
         }
     }
 
@@ -172,7 +171,7 @@ private fun WindowsDesktopDisplayScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("ADRENO 730", color = S22Cyan, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-            Text("$fps FPS", color = S22Emerald, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            Text("FPS —", color = Color.LightGray, fontWeight = FontWeight.Bold, fontSize = 11.sp)
             Text("${String.format("%.1f", tempC)}°C", color = if (tempC > 55f) S22Red else S22Amber, fontSize = 11.sp)
             Text("${resW}x${resH}", color = Color.White, fontSize = 11.sp)
             Text("Input: $lastPressedButton", color = Color.LightGray, fontSize = 11.sp)
@@ -254,12 +253,57 @@ private fun WindowsDesktopDisplayScreen(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Icon(Icons.Default.Window, contentDescription = "Start", tint = S22Cyan, modifier = Modifier.size(20.dp))
-                Text("Start", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { showStartMenu = !showStartMenu }
+                        .padding(horizontal = 6.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(Icons.Default.Window, contentDescription = "Start", tint = S22Cyan, modifier = Modifier.size(20.dp))
+                    Text("Start", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
                 Text("|", color = Color.Gray)
                 Text(turnipName, color = S22Emerald, fontSize = 11.sp)
             }
             Text("S22 Ultra • Snapdragon 8 Gen 1", color = Color.LightGray, fontSize = 11.sp)
+        }
+
+        if (showStartMenu) {
+            Card(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 12.dp, bottom = 46.dp)
+                    .widthIn(min = 220.dp, max = 300.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xF21A2638)),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("90-FPS • Start", color = S22Cyan, fontWeight = FontWeight.Bold)
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
+                    Text("Container: $containerName", color = Color.White, fontSize = 11.sp)
+                    Text(
+                        if (runtimeReady) "Runtime ditemukan, tetapi launcher belum siap."
+                        else "Runtime Wine/Box64 belum terpasang.",
+                        color = S22Amber,
+                        fontSize = 11.sp
+                    )
+                    TextButton(onClick = { showConsole = true; showStartMenu = false }) {
+                        Icon(Icons.Default.Terminal, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Buka log runtime")
+                    }
+                    TextButton(onClick = {
+                        Toast.makeText(context, "File Explorer Windows belum tersedia karena runtime belum terpasang.", Toast.LENGTH_LONG).show()
+                        showStartMenu = false
+                    }) {
+                        Icon(Icons.Default.FolderOpen, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("File Explorer (belum tersedia)")
+                    }
+                }
+            }
         }
 
         // Virtual XInput Gamepad Overlay
