@@ -1,4 +1,4 @@
-# S22 WinEmu
+# 90-FPS — S22 WinEmu
 
 Aplikasi Android eksperimental yang ditargetkan khusus untuk **Samsung Galaxy S22 Ultra Snapdragon 8 Gen 1 (SM8450 / Adreno 730)**.
 
@@ -11,7 +11,7 @@ Aplikasi Android eksperimental yang ditargetkan khusus untuk **Samsung Galaxy S2
 - UI: Kotlin + Jetpack Compose
 - Native layer: C++17 + Android NDK + JNI + Vulkan
 
-## Fitur aplikasi saat ini
+## Branding dan tampilan\n\n- Nama aplikasi: **90-FPS** dengan ikon launcher neon khusus dan adaptive icon Android.\n- Dashboard gelap bergaya gaming dengan aksen cyan/ungu, indikator perangkat, serta tab Runtime dan Scaling Lab.\n\n## Fitur aplikasi saat ini
 
 - Dashboard perangkat dan informasi GPU/Vulkan.
 - Katalog driver dan impor paket driver dari penyimpanan.
@@ -25,7 +25,7 @@ Menu **Runtime** menyediakan pilihan konfigurasi Wine + Box64, Proton (Experimen
 
 **Proton di Android:** Proton upstream ditujukan untuk Linux/Steam. Android memerlukan build/port yang kompatibel, integrasi ARM64/Box64, root filesystem, serta graphics stack yang sesuai. Karena itu Proton ditandai Experimental dan tidak otomatis diunduh atau dijalankan sebagai Proton desktop biasa.
 
-## C/C++ native toolchain
+## Scaling Lab: upscaling dan frame generation\n\nTab **Scaling** menjelaskan jalur peningkatan kualitas/performa grafis. Render resolution scaling melalui preset resolusi yang sudah ada dapat mengurangi beban GPU, tetapi bukan AI upscaling. **Lossless Scaling Frame Generation (LSFG) belum terintegrasi**: aplikasi PC Lossless Scaling tidak dapat langsung dipakai sebagai library Android. Implementasi Android memerlukan capture frame, motion estimation/interpolation, Vulkan compute shader, dan frame pacing. UI menandai fitur ini sebagai belum tersedia agar tidak memberi kesan FPS sudah meningkat.\n\n## C/C++ native toolchain
 
 Build APK memakai Android NDK 26.3.11579264 dan CMake 3.22.1 melalui GitHub Actions. NDK menyediakan Clang/LLVM, linker, ARM64 sysroot, libc++, JNI headers, dan LLDB tooling; CMake mengatur build native. CMakeLists mengompilasi kode C++17 untuk ABI `arm64-v8a`. Komponen ini adalah toolchain build untuk APK, bukan IDE/compiler C++ lengkap yang otomatis terinstal di ponsel.
 
