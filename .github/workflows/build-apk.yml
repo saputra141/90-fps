@@ -69,9 +69,9 @@ jobs:
             https://github.com/brunodev85/winlator.git upstream
           test -f upstream/app/gradlew
           test -f upstream/app/app/src/main/assets/rootfs.tzst
-          test -f upstream/app/app/src/main/assets/box64/box64-0.4.4.tzst
+          test -f upstream/app/app/src/main/assets/box64/box64-0.4.0.tzst
           test -f upstream/app/app/src/main/assets/dxwrapper/dxvk-2.4.1.tzst
-          test -f upstream/app/app/src/main/assets/graphics_driver/turnip-26.2.0.tzst
+          test -f upstream/app/app/src/main/assets/graphics_driver/turnip-26.1.0.tzst
           echo "Pinned Winlator engine and bundled runtime assets verified."
 
       - name: Rebrand package as 90-FPS
@@ -141,9 +141,9 @@ jobs:
           ls -lh release/*.apk
           unzip -l "$APK" | grep -E 'assets/(rootfs|box64|dxwrapper|graphics_driver)' | head -40
           unzip -l "$APK" | grep -q 'assets/rootfs.tzst'
-          unzip -l "$APK" | grep -q 'assets/box64/box64-0.4.4.tzst'
+          unzip -l "$APK" | grep -q 'assets/box64/box64-0.4.0.tzst'
           unzip -l "$APK" | grep -q 'assets/dxwrapper/dxvk-2.4.1.tzst'
-          unzip -l "$APK" | grep -q 'assets/graphics_driver/turnip-26.2.0.tzst'
+          unzip -l "$APK" | grep -q 'assets/graphics_driver/turnip-26.1.0.tzst'
 
       - name: Package corresponding upstream source and submodules
         run: |
