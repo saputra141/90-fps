@@ -1,24 +1,37 @@
-# S22 WinEmu — Windows Emulator Khusus Samsung Galaxy S22 Ultra (Snapdragon 8 Gen 1)
+# S22 WinEmu
 
-Emulator Windows berbasis Android (Kotlin + Jetpack Compose + Native C++ NDK/JNI) yang dioptimalkan langsung untuk **Samsung Galaxy S22 Ultra (SM-S908x / Snapdragon 8 Gen 1 / GPU Adreno 730)**.
+Aplikasi Android eksperimental yang ditargetkan khusus untuk **Samsung Galaxy S22 Ultra Snapdragon 8 Gen 1 (SM8450 / Adreno 730)**.
 
-## Fitur Utama
-- **Optimasi Snapdragon 8 Gen 1 & Adreno 730**:
-  - Deteksi GPU Adreno 730 via Vulkan (`libvulkan.so`) dan sensor suhu SoC langsung dari JNI C++.
-  - *CPU Core Pinning* (`sched_setaffinity`) ke cluster Prime **Cortex-X2** dan **Cortex-A710** dengan profil *S22U Thermal Guard*.
-  - Konfigurasi otomatis **Box64 Dynarec** + **Mesa Turnip** (`TU_DEBUG=noconform`, `MESA_VK_WSI_PRESENT_MODE=mailbox`, `DXVK_ASYNC=1`).
-- **Pilihan Driver Adreno 730 Tertanam**:
-  - Mesa Turnip v24.3.0-R11 (Adreno 730)
-  - Mesa Turnip v24.1.0-R18 Stable
-  - Qualcomm Stock Vulkan v676.53
-  - DXVK-GPLAsync v2.4.1 & v1.10.3
-  - VKD3D-Proton v2.13 (DirectX 12)
-  - Box64 v0.3.0 (ARMv9/ARMv8.2+ dotprod)
-- **Download Driver Sendiri di Google**:
-  - Tab **Google** di dalam aplikasi dilengkapi WebView dengan pintasan pencarian driver Adreno 730 di Google & GitHub.
-  - Setiap link `.zip`, `.adpkg`, `.tar.gz`, `.tzst`, atau `.wcp` yang diklik akan **otomatis diunduh & diekstrak** ke folder driver emulator.
+## Target perangkat
 
-## Cara Build APK Otomatis via GitHub
-1. Salin seluruh file proyek ini ke repository GitHub Anda (`main` atau `master`).
-2. Buka tab **Actions** di GitHub, workflow **Build S22 WinEmu APK** akan berjalan otomatis.
-3. Setelah selesai, unduh artifact **S22WinEmu-SD8Gen1-APK** dan instal di Samsung Galaxy S22 Ultra Anda.
+- ABI: ARM64 (arm64-v8a)
+- SoC: Qualcomm Snapdragon 8 Gen 1
+- GPU: Adreno 730
+- Android minimum: Android 8.0 (API 26)
+- UI: Kotlin + Jetpack Compose
+- Native layer: C++17 + Android NDK + JNI + Vulkan
+
+## Fitur aplikasi saat ini
+
+- Dashboard perangkat dan informasi GPU/Vulkan.
+- Katalog driver dan impor paket driver dari penyimpanan.
+- Profil resolusi dan optimasi yang ditujukan untuk layar S22 Ultra.
+- Antarmuka desktop, log, dan kontrol sentuh virtual.
+- Kerangka JNI untuk pemeriksaan hardware dan menjalankan binary runtime ARM64.
+
+## Status penting: runtime Windows
+
+APK Android ini **belum menyertakan distribusi Wine, Box64, root filesystem Windows compatibility, Mesa Turnip, DXVK, atau VKD3D-Proton yang siap pakai**. UI desktop dan katalog driver bukan berarti game Windows sudah bisa dijalankan.
+
+Untuk menjalankan program Windows x86/x64 secara lokal, aplikasi masih membutuhkan paket runtime ARM64 yang kompatibel, integrasi loader/Box64 dan Wine yang benar, root filesystem/prefix, serta lapisan grafis yang cocok dengan Adreno 730. Game berat juga tidak dijamin berjalan lancar pada Snapdragon 8 Gen 1; kompatibilitas dan performa bergantung pada game, API grafis, RAM, driver, dan suhu perangkat.
+
+Gunakan hanya file runtime dan game yang kamu miliki hak untuk menggunakannya. Jangan menganggap semua driver ZIP dapat langsung dipakai sebagai Vulkan driver Android.
+
+## Build APK via GitHub Actions
+
+1. Buka tab Actions di repository.
+2. Jalankan workflow Build S22 WinEmu APK atau push commit ke branch main.
+3. Jika workflow sukses, unduh artifact S22WinEmu-SD8Gen1-APK.
+4. Instal APK debug di Galaxy S22 Ultra.
+
+Build workflow mengompilasi target native ARM64. Build berhasil hanya membuktikan APK berhasil dibuat; bukan bukti bahwa runtime Windows/game sudah terintegrasi.
