@@ -55,6 +55,7 @@ class DisplayActivity : ComponentActivity() {
         val turnipName = intent.getStringExtra("turnip_name") ?: "Mesa Turnip A730"
         val dxvkName = intent.getStringExtra("dxvk_name") ?: "DXVK 2.4.1"
         val profileTitle = intent.getStringExtra("profile_title") ?: "Balanced"
+        val runtimeBackend = intent.getStringExtra("runtime_backend") ?: "WINE_BOX64"
         val cpuMask = intent.getIntExtra("cpu_mask", 0xF0)
         val envPairs = intent.getStringArrayListExtra("env_pairs") ?: arrayListOf()
 
@@ -86,6 +87,7 @@ class DisplayActivity : ComponentActivity() {
                     turnipName = turnipName,
                     dxvkName = dxvkName,
                     profileTitle = profileTitle,
+                    runtimeBackend = runtimeBackend,
                     envPairs = envPairs,
                     runtimePid = runtimePid,
                     onExit = { finish() }
@@ -104,6 +106,7 @@ private fun WindowsDesktopDisplayScreen(
     turnipName: String,
     dxvkName: String,
     profileTitle: String,
+    runtimeBackend: String,
     envPairs: List<String>,
     runtimePid: Int,
     onExit: () -> Unit
@@ -122,6 +125,8 @@ private fun WindowsDesktopDisplayScreen(
             add("[DRV] Vulkan ICD: $turnipName")
             add("[DRV] DirectX Layer: $dxvkName")
             add("[CPU] Affinity Profile: $profileTitle")
+            add("[RUNTIME] Backend selected: $runtimeBackend")
+            if (runtimeBackend == "PROTON") add("[WARN] Proton backend is experimental and requires a compatible Android Proton/Wine package.")
             add("[WINE] Target Executable: $exePath")
             if (runtimePid > 0) {
                 add("[PROC] Box64/Wine PID: $runtimePid berjalan aktif")
