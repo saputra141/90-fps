@@ -8,7 +8,7 @@ composeBom = "2024.09.03"
 coroutines = "1.8.1"
 
 [libraries]
-androidx-core-ktx = { group = "androidx.core.ktx", name = "core-ktx", value = "1.13.1" }
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle.runtime.ktx", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
