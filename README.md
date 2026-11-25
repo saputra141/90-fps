@@ -19,6 +19,16 @@ Aplikasi Android eksperimental yang ditargetkan khusus untuk **Samsung Galaxy S2
 - Antarmuka desktop, log, dan kontrol sentuh virtual.
 - Kerangka JNI untuk pemeriksaan hardware dan menjalankan binary runtime ARM64.
 
+## Runtime Windows dan backend
+
+Menu **Runtime** menyediakan pilihan konfigurasi Wine + Box64, Proton (Experimental), Wine ARM64, dan Box64 + Wine. Pilihan backend diteruskan sebagai environment variable saat membuka desktop container. Ini adalah pemilihan konfigurasi, bukan klaim bahwa binary Proton/Wine sudah terpasang.
+
+**Proton di Android:** Proton upstream ditujukan untuk Linux/Steam. Android memerlukan build/port yang kompatibel, integrasi ARM64/Box64, root filesystem, serta graphics stack yang sesuai. Karena itu Proton ditandai Experimental dan tidak otomatis diunduh atau dijalankan sebagai Proton desktop biasa.
+
+## C/C++ native toolchain
+
+Build APK memakai Android NDK 26.3.11579264 dan CMake 3.22.1 melalui GitHub Actions. NDK menyediakan Clang/LLVM, linker, ARM64 sysroot, libc++, JNI headers, dan LLDB tooling; CMake mengatur build native. CMakeLists mengompilasi kode C++17 untuk ABI `arm64-v8a`. Komponen ini adalah toolchain build untuk APK, bukan IDE/compiler C++ lengkap yang otomatis terinstal di ponsel.
+
 ## Status penting: runtime Windows
 
 APK Android ini **belum menyertakan distribusi Wine, Box64, root filesystem Windows compatibility, Mesa Turnip, DXVK, atau VKD3D-Proton yang siap pakai**. UI desktop dan katalog driver bukan berarti game Windows sudah bisa dijalankan.
