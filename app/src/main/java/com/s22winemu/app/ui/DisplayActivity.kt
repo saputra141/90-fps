@@ -84,6 +84,9 @@ class DisplayActivity : ComponentActivity() {
                     runtimeBackend = runtimeBackend,
                     envPairs = envPairs,
                     runtimePid = runtimePid,
+                    runtimeReady = runtimeReady,
+                    box64Available = box64Bin.canExecute(),
+                    wineAvailable = wineBin.canExecute(),
                     onExit = { finish() }
                 )
             }
@@ -103,6 +106,9 @@ private fun WindowsDesktopDisplayScreen(
     runtimeBackend: String,
     envPairs: List<String>,
     runtimePid: Int,
+    runtimeReady: Boolean,
+    box64Available: Boolean,
+    wineAvailable: Boolean,
     onExit: () -> Unit
 ) {
     var cursorPos by remember { mutableStateOf(Offset(500f, 300f)) }
@@ -128,8 +134,8 @@ private fun WindowsDesktopDisplayScreen(
                 add("[CHECK] Box64 dan Wine ditemukan; launcher PRoot/container belum dikonfigurasi.")
             } else {
                 add("[ERROR] Runtime Windows belum terpasang lengkap.")
-                add("[CHECK] Box64: ${if (box64Bin.canExecute()) "OK" else "TIDAK ADA"}")
-                add("[CHECK] Wine: ${if (wineBin.canExecute()) "OK" else "TIDAK ADA"}")
+                add("[CHECK] Box64: ${if (box64Available) "OK" else "TIDAK ADA"}")
+                add("[CHECK] Wine: ${if (wineAvailable) "OK" else "TIDAK ADA"}")
                 add("[INFO] Layar ini adalah shell UI, bukan desktop Windows yang sedang berjalan.")
             }
             add("[INFO] File EXE tidak akan dijalankan sampai runtime Wine + Box64 + rootfs + PRoot tersedia.")
