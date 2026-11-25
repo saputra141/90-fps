@@ -4,6 +4,7 @@ import android.os.Build
 import com.s22winemu.app.model.DriverPackage
 import com.s22winemu.app.model.S22ResolutionPreset
 import com.s22winemu.app.model.WindowsContainer
+import com.s22winemu.app.model.RuntimeBackend
 
 object S22HardwareOptimizer {
 
@@ -34,11 +35,14 @@ object S22HardwareOptimizer {
         selectedDxvk: DriverPackage?,
         selectedBox64: DriverPackage?,
         driverRootPath: String,
-        winePrefixPath: String
+        winePrefixPath: String,
+        runtimeBackend: RuntimeBackend = RuntimeBackend.WINE_BOX64
     ): Map<String, String> {
         val env = linkedMapOf<String, String>()
 
         // Core Wine & Display
+        env["WINEMU_RUNTIME_BACKEND"] = runtimeBackend.name
+        env["WINEMU_RUNTIME_STATUS"] = if (runtimeBackend == RuntimeBackend.PROTON) "experimental-requires-android-build" else "requires-installed-runtime"
         env["WINEPREFIX"] = winePrefixPath
         env["WINEESYNC"] = "1"
         env["WINEFSYNC"] = "1"
