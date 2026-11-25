@@ -1,0 +1,1834 @@
+```html
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PC2ANDROID Studio — Native ARM64 Game Porting</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            obsidian: '#0A0D12',
+            panel: '#121722',
+            elevated: '#192130',
+            borderSubtle: '#283347',
+            cyanAccent: '#38BDF8',
+            emeraldSuccess: '#10B981',
+            amberWarning: '#F59E0B',
+            coralError: '#EF4444',
+            violetInfo: '#A78BFA',
+            terminalBg: '#07090D',
+            textPrimary: '#F1F5F9',
+            textSecondary: '#94A3B8',
+            textMuted: '#64748B',
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      background-color: #0A0D12;
+      color: #F1F5F9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    /* Custom subtle dark scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0A0D12;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #283347;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #38BDF8;
+    }
+    input[type="range"] {
+      accent-color: #38BDF8;
+    }
+    .grid-canvas-bg {
+      background-image:
+        linear-gradient(to right, rgba(40, 51, 71, 0.35) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(40, 51, 71, 0.35) 1px, transparent 1px);
+      background-size: 6.25% 11.111%;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-obsidian text-textPrimary selection:bg-cyanAccent/30 selection:text-cyanAccent">
+
+  <!-- TOP DEVELOPER STUDIO APP BAR -->
+  <header class="sticky top-0 z-30 bg-panel/95 backdrop-blur border-b border-borderSubtle px-3 sm:px-5 py-2.5">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-9 h-9 rounded-lg bg-cyanAccent/15 border border-cyanAccent/30 flex items-center justify-center shrink-0">
+          <!-- CPU / ARM64 Chip SVG Icon -->
+          <svg class="w-5 h-5 text-cyanAccent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <rect x="6" y="6" width="12" height="12" rx="2" />
+            <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm sm:text-base font-bold tracking-tight text-textPrimary truncate">PC2ANDROID STUDIO</h1>
+            <span class="hidden md:inline-block font-mono text-[10px] px-1.5 py-0.5 rounded bg-elevated border border-borderSubtle text-textSecondary">com.pc2android.studio</span>
+          </div>
+          <p id="app-subtitle" class="font-mono text-[11px] text-textMuted truncate">Native ARM64 Porting Pipeline • arm64-v8a</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <!-- Active Project Pill -->
+        <button onclick="navigateTo('analyzer')" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-elevated border border-borderSubtle hover:border-cyanAccent/50 transition text-xs">
+          <span class="w-2 h-2 rounded-full bg-emeraldSuccess"></span>
+          <span id="header-active-project" class="font-mono font-semibold text-textPrimary">CubeRunner3D</span>
+        </button>
+
+        <!-- Language Switcher (ID / EN) -->
+        <div class="flex items-center bg-obsidian border border-borderSubtle rounded-lg p-0.5 font-mono text-xs">
+          <button id="btn-lang-id" onclick="setLanguage('id')" class="px-2 py-1 rounded-md font-bold transition bg-cyanAccent text-obsidian">ID</button>
+          <button id="btn-lang-en" onclick="setLanguage('en')" class="px-2 py-1 rounded-md font-semibold transition text-textSecondary hover:text-textPrimary">EN</button>
+        </div>
+
+        <!-- Keystore Vault / AI Settings Button -->
+        <button onclick="openVaultModal()" title="Android Keystore AI Vault" class="p-2 rounded-lg bg-elevated border border-borderSubtle hover:border-cyanAccent/50 text-textSecondary hover:text-cyanAccent transition">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE SHELL (Desktop Side Rail + Fluid Content) -->
+  <div class="flex-1 max-w-7xl w-full mx-auto flex flex-col lg:flex-row">
+    <!-- Desktop Side Navigation Rail -->
+    <aside class="hidden lg:flex lg:w-60 shrink-0 flex-col justify-between border-r border-borderSubtle bg-panel/50 p-3">
+      <nav id="desktop-nav" class="space-y-1.5"></nav>
+
+      <div class="p-3 rounded-xl bg-elevated/80 border border-borderSubtle space-y-2">
+        <div class="flex items-center gap-1.5 text-[11px] font-mono text-emeraldSuccess">
+          <span class="w-2 h-2 rounded-full bg-emeraldSuccess animate-pulse"></span>
+          <span data-i18n="noEmulationBadge">NO EMULATION / NO WINE</span>
+        </div>
+        <p class="text-[11px] text-textSecondary leading-relaxed" data-i18n="noEmulationNote">
+          Kompilasi biner ARM64 native langsung via NDK Clang++, CMake, Ninja &amp; apksig.
+        </p>
+      </div>
+    </aside>
+
+    <!-- Active Screen Viewport -->
+    <main id="screen-container" class="flex-1 p-3 sm:p-5 pb-24 lg:pb-8 min-w-0"></main>
+  </div>
+
+  <!-- MOBILE BOTTOM NAVIGATION BAR -->
+  <nav id="mobile-nav" class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-panel/95 backdrop-blur border-t border-borderSubtle grid grid-cols-5 px-1 py-1"></nav>
+
+  <!-- CUSTOM MODAL DIALOG (Replaces alert() and confirm() strictly) -->
+  <div id="custom-modal-backdrop" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-elevated border border-borderSubtle rounded-2xl shadow-2xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-borderSubtle flex items-center justify-between">
+        <h3 id="modal-title" class="text-base font-bold text-textPrimary">Dialog</h3>
+        <button onclick="closeModal()" class="p-1.5 rounded-lg text-textSecondary hover:text-textPrimary hover:bg-panel">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div id="modal-body" class="p-5 text-sm text-textSecondary space-y-3"></div>
+      <div id="modal-footer" class="px-5 py-3.5 bg-panel border-t border-borderSubtle flex justify-end gap-2.5"></div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION BANNER -->
+  <div id="toast-banner" class="pointer-events-none fixed bottom-20 lg:bottom-6 right-4 z-50 transform translate-y-4 opacity-0 transition-all duration-200">
+    <div class="bg-elevated border border-cyanAccent/50 text-textPrimary px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 text-xs font-mono">
+      <span class="w-2 h-2 rounded-full bg-cyanAccent"></span>
+      <span id="toast-message">Copied</span>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. INTERNATIONALIZATION (INDONESIAN DEFAULT + ENGLISH TOGGLE)
+    // =========================================================================
+    const I18N = {
+      id: {
+        subtitle: "Native ARM64 Porting Pipeline • arm64-v8a",
+        nav_dashboard: "Dasbor",
+        nav_analyzer: "Impor & Analisis",
+        nav_build: "Pusat Build",
+        nav_controls: "Kontrol Sentuh",
+        nav_ai: "Asisten AI & Diff",
+        noEmulationBadge: "TANPA EMULASI / TANPA WINE",
+        noEmulationNote: "Kompilasi biner ARM64 native langsung via NDK Clang++, CMake, Ninja & apksig.",
+        kpi_total: "Total Proyek",
+        kpi_ready: "Siap Di-porting",
+        kpi_blockers: "Penghambat",
+        kpi_success: "Build Berhasil",
+        kpi_failed: "Build Gagal",
+        env_title: "LINGKUNGAN BUILD ON-DEVICE (ARM64)",
+        storage_free: "Penyimpanan Bebas",
+        ram_free: "RAM Bebas",
+        projects_header: "PROYEK TERIMPOR",
+        pure_arm64_badge: "Tanpa Emulasi • Biner ARM64 Murni",
+        status_ready: "Siap Build On-Device",
+        status_rewrite: "Butuh Migrasi API",
+        status_external: "Butuh Toolchain Desktop",
+        status_nosource: "Biner Tanpa Sumber",
+        btn_analyzer: "Analisis",
+        btn_controls: "Kontrol Sentuh",
+        btn_build: "Pusat Build",
+        import_saf_title: "Android Storage Access Framework (SAF) & ZIP Guard",
+        import_saf_desc: "Pilih proyek sumber atau uji validasi keamanan arsip (perlindungan Zip Slip path traversal & Zip Bomb 4 GB cap). File asli dikunci read-only.",
+        btn_test_zip_guard: "Uji Simulasi Zip Slip / Bomb",
+        score_formula: "Skor dihitung transparan dari bobot tertimbang: Mesin & Sumber (35%), API Grafis (30%), Isolasi Windows/x86 (35%). Komponen UNKNOWN tidak ditebak.",
+        build_guard_title: "PEMERIKSAAN KAPASITAS & TOOLCHAIN ON-DEVICE",
+        sim_low_ram: "Simulasi RAM Rendah (< 1024 MB)",
+        sim_missing_ndk: "Simulasi NDK / Sysroot Hilang",
+        sim_large_confirm: "Konfirmasi Dialog Build Besar",
+        btn_build_apk: "Build APK ARM64",
+        btn_cancel_build: "Batalkan",
+        btn_copy_logs: "Salin Log",
+        btn_inspect_apk: "Inspeksi & Instal APK",
+        controls_hint: "Seret elemen di kanvas 16:9 (mendukung sentuhan & mouse) • Ekspor ke assets/pc2android_touch_layout.json",
+        btn_add_button: "+ Tombol",
+        btn_add_joystick: "+ Joystick",
+        btn_reset_preset: "Reset Preset",
+        btn_save_layout: "Simpan Layout JSON",
+        ai_title: "ASISTEN PORTING AI & AUDIT PATCH REVERSIBEL",
+        ai_subtitle: "Semua perubahan ditulis ke salinan kerja terisolasi dan dapat dibatalkan kapan saja."
+      },
+      en: {
+        subtitle: "Native ARM64 Porting Pipeline • arm64-v8a",
+        nav_dashboard: "Dashboard",
+        nav_analyzer: "Import & Analyzer",
+        nav_build: "Build Center",
+        nav_controls: "Touch Controls",
+        nav_ai: "AI & Diffs",
+        noEmulationBadge: "NO EMULATION / NO WINE",
+        noEmulationNote: "Compiles native ARM64 binaries directly via NDK Clang++, CMake, Ninja & apksig.",
+        kpi_total: "Total Projects",
+        kpi_ready: "Ready to Port",
+        kpi_blockers: "With Blockers",
+        kpi_success: "Builds Passed",
+        kpi_failed: "Builds Failed",
+        env_title: "ON-DEVICE BUILD ENVIRONMENT (ARM64)",
+        storage_free: "Free Storage",
+        ram_free: "Free RAM",
+        projects_header: "IMPORTED PROJECTS",
+        pure_arm64_badge: "Zero Emulation • Pure ARM64 Binaries",
+        status_ready: "On-Device Build Ready",
+        status_rewrite: "API Rewrite Required",
+        status_external: "External Toolchain Req.",
+        status_nosource: "Binary Without Source",
+        btn_analyzer: "Analyze",
+        btn_controls: "Touch Controls",
+        btn_build: "Build Center",
+        import_saf_title: "Android Storage Access Framework (SAF) & ZIP Guard",
+        import_saf_desc: "Select a source project or test archive security validation (Zip Slip path traversal & 4 GB Zip Bomb protection). Originals remain read-only.",
+        btn_test_zip_guard: "Test Zip Slip / Bomb Guard",
+        score_formula: "Score is transparently computed from weighted evidence: Engine & Source (35%), Graphics API (30%), Windows/x86 Isolation (35%). UNKNOWN items are never fabricated.",
+        build_guard_title: "ON-DEVICE RESOURCE & TOOLCHAIN GUARD",
+        sim_low_ram: "Simulate Low RAM (< 1024 MB)",
+        sim_missing_ndk: "Simulate Missing NDK / Sysroot",
+        sim_large_confirm: "Confirm Large Build Dialog",
+        btn_build_apk: "Build ARM64 APK",
+        btn_cancel_build: "Cancel",
+        btn_copy_logs: "Copy Logs",
+        btn_inspect_apk: "Inspect & Install APK",
+        controls_hint: "Drag controls on the 16:9 viewport (touch & mouse supported) • Exports to assets/pc2android_touch_layout.json",
+        btn_add_button: "+ Button",
+        btn_add_joystick: "+ Joystick",
+        btn_reset_preset: "Reset Preset",
+        btn_save_layout: "Save Layout JSON",
+        ai_title: "AI PORTING ASSISTANT & REVERSIBLE PATCH AUDIT",
+        ai_subtitle: "All edits apply strictly to an isolated working copy and remain fully reversible."
+      }
+    };
+
+    // =========================================================================
+    // 2. PROJECT DATASET (5 REALISTIC PROJECTS ACROSS ALL PORTING OUTCOMES)
+    // =========================================================================
+    const PROJECTS = [
+      {
+        id: "cuberunner3d",
+        name: "CubeRunner3D",
+        packageId: "com.pc2android.port.cuberunner3d",
+        engine: "NATIVE_CPP",
+        engineLabel: "Native C++17 (CMake)",
+        engineVersion: "C++17 / NDK r27",
+        language: "C/C++",
+        pcArch: "Source Project (Targetable to ARM64)",
+        feasibility: "DIRECT_ON_DEVICE_ELIGIBLE",
+        score: 92,
+        graphicsApis: ["OpenGL ES 3.0", "EGL 1.5"],
+        winDeps: [],
+        shaderModels: ["GLSL ES 3.00 (#version 300 es)"],
+        inputSystems: ["SDL2 / Touch Overlay Mapped"],
+        audioLibs: ["OpenSL ES"],
+        estStorageMb: 240,
+        estRamMb: 768,
+        recBackend: "OpenGL ES 3.0 / 3.2",
+        breakdown: [
+          { catId: "Mesin & Ketersediaan Sumber", catEn: "Engine & Source Availability", weight: 35, raw: 95, noteId: "Kode sumber C++17 lengkap dengan CMakeLists.txt.", noteEn: "Complete C++17 source code with CMakeLists.txt." },
+          { catId: "Kompatibilitas API Grafis", catEn: "Graphics API Compatibility", weight: 30, raw: 90, noteId: "OpenGL ES 3.0 + EGL didukung penuh secara native.", noteEn: "OpenGL ES 3.0 + EGL natively supported." },
+          { catId: "Isolasi Dependensi Windows/x86", catEn: "Windows/x86 Isolation", weight: 35, raw: 90, noteId: "0 referensi <windows.h> atau intrinsik x86.", noteEn: "0 references to <windows.h> or x86 intrinsics." }
+        ],
+        blockersId: [],
+        blockersEn: [],
+        modsId: [
+          "Konfigurasi CMakeLists.txt untuk shared library libpc2android_game.so (arm64-v8a).",
+          "Generate AndroidManifest.xml dengan android.app.NativeActivity (android:hasCode=\"false\").",
+          "Suntikkan assets/pc2android_touch_layout.json untuk input sentuh."
+        ],
+        modsEn: [
+          "Configure CMakeLists.txt for libpc2android_game.so shared library (arm64-v8a).",
+          "Generate AndroidManifest.xml with android.app.NativeActivity (android:hasCode=\"false\").",
+          "Inject assets/pc2android_touch_layout.json for touch input."
+        ],
+        buildSteps: [
+          "[1/5] Mengonfigurasi CMake untuk aarch64-linux-android26 (-DCMAKE_ANDROID_ARCH_ABI=arm64-v8a)...",
+          "-- Detecting CXX compiler ABI info - done (Clang 18.0.1 aarch64)",
+          "-- Configuring done (0.42s) • Generating Ninja build files...",
+          "[2/5] Mengompilasi C++17 menjadi libpc2android_game.so (ARM64 -O2 -fPIC)...",
+          "[1/4] Building CXX object CMakeFiles/pc2android_game.dir/src/main.cpp.o",
+          "[2/4] Building CXX object CMakeFiles/pc2android_game.dir/src/renderer_gles3.cpp.o",
+          "[3/4] Building CXX object CMakeFiles/pc2android_game.dir/src/touch_bridge.cpp.o",
+          "[4/4] Linking CXX shared library libpc2android_game.so (ld.lld EM_AARCH64)",
+          "[3/5] Mengemas AndroidManifest.xml & assets/pc2android_touch_layout.json dengan AAPT2...",
+          "[4/5] Menyuntikkan lib/arm64-v8a/libpc2android_game.so & menjalankan zipalign -p 4...",
+          "[5/5] Menandatangani APK (APK Signature Scheme v1/v2/v3) via com.android.apksig...",
+          "BUILD SUCCESS: ApkVerifier memverifikasi ELF EM_AARCH64 (0x00B7) & tanda tangan kriptografis."
+        ],
+        apkSizeKb: 1842,
+        elfLibs: ["lib/arm64-v8a/libpc2android_game.so"]
+      },
+      {
+        id: "nusantaraquest",
+        name: "NusantaraQuest",
+        packageId: "com.pc2android.port.nusantaraquest",
+        engine: "GODOT",
+        engineLabel: "Godot Engine 4.3",
+        engineVersion: "4.3.stable (config_version=5)",
+        language: "GDScript",
+        pcArch: "Source Project (Targetable to ARM64)",
+        feasibility: "DIRECT_ON_DEVICE_ELIGIBLE",
+        score: 93,
+        graphicsApis: ["Vulkan Mobile", "OpenGL ES 3.0 (gl_compatibility)"],
+        winDeps: [],
+        shaderModels: ["Godot Shading Language (SPIR-V / GLSL)"],
+        inputSystems: ["InputMap + Virtual Touch Overlay"],
+        audioLibs: ["Godot AudioServer (Ogg Vorbis / WAV)"],
+        estStorageMb: 380,
+        estRamMb: 896,
+        recBackend: "Vulkan 1.1+ (Fallback GLES 3.2)",
+        breakdown: [
+          { catId: "Mesin & Ketersediaan Sumber", catEn: "Engine & Source Availability", weight: 35, raw: 95, noteId: "Proyek GDScript murni tanpa C# .NET atau GDExtension x86.", noteEn: "Pure GDScript project with no .NET C# or x86 GDExtensions." },
+          { catId: "Kompatibilitas API Grafis", catEn: "Graphics API Compatibility", weight: 30, raw: 90, noteId: "Renderer 'mobile' & kompresi tekstur ETC2/ASTC aktif.", noteEn: "'mobile' renderer & ETC2/ASTC texture compression enabled." },
+          { catId: "Isolasi Dependensi Windows/x86", catEn: "Windows/x86 Isolation", weight: 35, raw: 95, noteId: "Tidak ditemukan pustaka native khusus Windows.", noteEn: "No Windows-specific native libraries detected." }
+        ],
+        blockersId: [],
+        blockersEn: [],
+        modsId: [
+          "Konfigurasi export_presets.cfg dengan architectures/arm64-v8a=true.",
+          "Kemas resource proyek menjadi arsip biner GDPC v2 (main.pack) 16-byte aligned.",
+          "Suntikkan main.pack ke template ekspor resmi Android ARM64 (libgodot_android.so)."
+        ],
+        modsEn: [
+          "Configure export_presets.cfg with architectures/arm64-v8a=true.",
+          "Pack project resources into 16-byte aligned binary GDPC v2 archive (main.pack).",
+          "Inject main.pack into official Android ARM64 export template (libgodot_android.so)."
+        ],
+        buildSteps: [
+          "[1/5] Mem-parsing project.godot (config_version=5, Godot 4.3, main_scene=res://scenes/world.tscn)...",
+          "WARNING: Mengaktifkan textures/vram_compression/import_etc2_astc=true untuk GPU mobile.",
+          "[2/5] Menulis preset ekspor ARM64 ke export_presets.cfg (architectures/arm64-v8a=true)...",
+          "[3/5] Mengemas 148 resource proyek menjadi binary GDPC v2 archive (main.pack, 14.2 MB)...",
+          "[4/5] Menyuntikkan assets/main.pack (STORED 4-byte aligned) ke template libgodot_android.so...",
+          "[5/5] Menandatangani APK (APK Signature Scheme v1/v2/v3) & memvalidasi ELF ARM64...",
+          "BUILD SUCCESS: ApkVerifier memverifikasi lib/arm64-v8a/libgodot_android.so & signature v2/v3."
+        ],
+        apkSizeKb: 34680,
+        elfLibs: ["lib/arm64-v8a/libgodot_android.so"]
+      },
+      {
+        id: "directxshooter",
+        name: "DirectXShooter",
+        packageId: "com.pc2android.port.dxshooter",
+        engine: "NATIVE_CPP",
+        engineLabel: "C++ DirectX 11",
+        engineVersion: "C++14 / Win32 SDK",
+        language: "C/C++ + HLSL",
+        pcArch: "Windows x86_64 Source",
+        feasibility: "SOURCE_REWRITE_REQUIRED",
+        score: 45,
+        graphicsApis: ["DirectX 11 (d3d11.h)"],
+        winDeps: ["<windows.h> (WinMain / HWND)", "<d3d11.h> (ID3D11Device)", "<xinput.h> (XInputGetState)"],
+        shaderModels: ["HLSL Shader Model 5.0 (Membutuhkan translasi ke GLSL/SPIR-V)"],
+        inputSystems: ["XInput + Win32 RawInput"],
+        audioLibs: ["XAudio2"],
+        estStorageMb: 620,
+        estRamMb: 1280,
+        recBackend: "Vulkan 1.1 atau OpenGL ES 3.2 (Setelah Migrasi Renderer)",
+        breakdown: [
+          { catId: "Mesin & Ketersediaan Sumber", catEn: "Engine & Source Availability", weight: 35, raw: 95, noteId: "Kode sumber C++ tersedia untuk dimodifikasi.", noteEn: "C++ source code is available for modification." },
+          { catId: "Kompatibilitas API Grafis", catEn: "Graphics API Compatibility", weight: 30, raw: 25, noteId: "DirectX 11 tidak tersedia di Android; butuh migrasi ke Vulkan/GLES3.", noteEn: "DirectX 11 is unavailable on Android; requires Vulkan/GLES3 migration." },
+          { catId: "Isolasi Dependensi Windows/x86", catEn: "Windows/x86 Isolation", weight: 35, raw: 15, noteId: "Ditemukan 3 referensi API khusus Windows (<windows.h>, d3d11, xinput).", noteEn: "Found 3 Windows-specific API references (<windows.h>, d3d11, xinput)." }
+        ],
+        blockersId: [
+          "Ditemukan header Win32 & DirectX 11 (<windows.h>, <d3d11.h>, <xinput.h>) yang tidak ada di Android NDK.",
+          "Shader HLSL SM 5.0 perlu dikonversi ke GLSL ES 3.00 / SPIR-V sebelum kompilasi."
+        ],
+        blockersEn: [
+          "Detected Win32 & DirectX 11 headers (<windows.h>, <d3d11.h>, <xinput.h>) absent from Android NDK.",
+          "HLSL SM 5.0 shaders must be converted to GLSL ES 3.00 / SPIR-V before compilation."
+        ],
+        modsId: [
+          "Ganti entry point WinMain & HWND dengan ANativeActivity_onCreate & EGLSurface.",
+          "Migrasikan ID3D11DeviceContext draw calls ke OpenGL ES 3.0 / Vulkan backend.",
+          "Ganti XInputGetState dengan Android AInputQueue & virtual touch joystick."
+        ],
+        modsEn: [
+          "Replace WinMain & HWND entry point with ANativeActivity_onCreate & EGLSurface.",
+          "Migrate ID3D11DeviceContext draw calls to OpenGL ES 3.0 / Vulkan backend.",
+          "Replace XInputGetState with Android AInputQueue & virtual touch joystick."
+        ],
+        buildSteps: [
+          "[1/5] Mengonfigurasi CMake dengan patch migrasi DirectX11 -> OpenGL ES 3.0...",
+          "WARNING: Menggunakan wrapper shim EGL_DX11_Compat untuk swapchain.",
+          "[2/5] Mengompilasi RendererGLES3.cpp & NativeBridge.cpp ke arm64-v8a...",
+          "[3/5] Mengemas AndroidManifest.xml (NativeActivity) via AAPT2...",
+          "[4/5] Menyuntikkan lib/arm64-v8a/libpc2android_game.so & zipalign...",
+          "[5/5] Menandatangani APK (v1/v2/v3) & memvalidasi header ELF ARM64...",
+          "BUILD SUCCESS: Hasil migrasi terkompilasi ke ARM64 native."
+        ],
+        apkSizeKb: 4120,
+        elfLibs: ["lib/arm64-v8a/libpc2android_game.so"]
+      },
+      {
+        id: "cyberarena",
+        name: "CyberArena",
+        packageId: "com.pc2android.port.cyberarena",
+        engine: "UNITY",
+        engineLabel: "Unity 2022.3.40f1",
+        engineVersion: "2022.3.40f1 (LTS)",
+        language: "C#",
+        pcArch: "Source Project (IL2CPP Targetable)",
+        feasibility: "EXTERNAL_TOOLCHAIN_REQUIRED",
+        score: 65,
+        graphicsApis: ["High Definition RP (HDRP - Desktop Only)"],
+        winDeps: ["Steamworks.NET (steam_api64.dll)"],
+        shaderModels: ["Unity ShaderLab / Compute Shaders"],
+        inputSystems: ["Unity InputSystem 1.7.0"],
+        audioLibs: ["Unity FMOD Core"],
+        estStorageMb: 2450,
+        estRamMb: 2048,
+        recBackend: "Vulkan / OpenGL ES 3.2 (Wajib migrasi HDRP -> URP)",
+        breakdown: [
+          { catId: "Mesin & Ketersediaan Sumber", catEn: "Engine & Source Availability", weight: 35, raw: 65, noteId: "Unity Editor & compiler IL2CPP tidak dapat berjalan di ponsel Android.", noteEn: "Unity Editor & IL2CPP compiler cannot run on an Android phone." },
+          { catId: "Kompatibilitas API Grafis", catEn: "Graphics API Compatibility", weight: 30, raw: 45, noteId: "Paket com.unity.render-pipelines.high-definition (HDRP) tidak mendukung Android.", noteEn: "com.unity.render-pipelines.high-definition (HDRP) does not support Android." },
+          { catId: "Isolasi Dependensi Windows/x86", catEn: "Windows/x86 Isolation", weight: 35, raw: 80, noteId: "Skrip C# portabel, kecuali plugin steam_api64.dll.", noteEn: "C# scripts are portable, except for steam_api64.dll plugin." }
+        ],
+        blockersId: [
+          "Unity Editor & IL2CPP membutuhkan lingkungan build desktop berlisensi (tidak tersedia on-device).",
+          "Paket HDRP terdeteksi di Packages/manifest.json — harus diganti ke Universal Render Pipeline (URP) untuk mobile."
+        ],
+        blockersEn: [
+          "Unity Editor & IL2CPP require a licensed desktop build environment (unavailable on-device).",
+          "HDRP package detected in Packages/manifest.json — must migrate to Universal Render Pipeline (URP) for mobile."
+        ],
+        modsId: [
+          "Ekspor konfigurasi PlayerSettings Android ARM64 & skrip CLI headless Unity -batchmode.",
+          "Nonaktifkan plugin Windows x86_64 (steam_api64.dll) pada target Android."
+        ],
+        modsEn: [
+          "Export Android ARM64 PlayerSettings config & headless Unity -batchmode CLI script.",
+          "Disable Windows x86_64 plugin (steam_api64.dll) on Android target."
+        ],
+        buildSteps: [],
+        apkSizeKb: 0,
+        elfLibs: []
+      },
+      {
+        id: "legacygame",
+        name: "LegacyGame.exe",
+        packageId: "N/A (Compiled PE32+ Binary)",
+        engine: "COMPILED_PC_BINARY_ONLY",
+        engineLabel: "Compiled Windows PE32+",
+        engineVersion: "UNKNOWN (No Source)",
+        language: "Compiled Machine Code (x86_64)",
+        pcArch: "Windows x86_64 (PE32+ Machine 0x8664)",
+        feasibility: "NOT_PORTABLE_WITHOUT_SOURCE",
+        score: 0,
+        graphicsApis: ["Direct3D 9 (Import Table: d3d9.dll)"],
+        winDeps: ["KERNEL32.dll", "USER32.dll", "d3d9.dll", "DSOUND.dll"],
+        shaderModels: ["UNKNOWN (Compiled Binary)"],
+        inputSystems: ["DirectInput8 (dinput8.dll)"],
+        audioLibs: ["DirectSound (dsound.dll)"],
+        estStorageMb: 512,
+        estRamMb: 0,
+        recBackend: "Tidak Dapat Di-porting Tanpa Kode Sumber",
+        breakdown: [
+          { catId: "Mesin & Ketersediaan Sumber", catEn: "Engine & Source Availability", weight: 35, raw: 0, noteId: "Hanya file .exe terkompilasi; tidak ada kode sumber C/C++/C#/GDScript.", noteEn: "Compiled .exe binary only; no C/C++/C#/GDScript source code found." },
+          { catId: "Kompatibilitas API Grafis", catEn: "Graphics API Compatibility", weight: 30, raw: 0, noteId: "Terikat pada biner d3d9.dll x86_64.", noteEn: "Bound to x86_64 d3d9.dll binary." },
+          { catId: "Isolasi Dependensi Windows/x86", catEn: "Windows/x86 Isolation", weight: 35, raw: 0, noteId: "Instruksi mesin x86_64 (PE32+) tidak dapat dijalankan di CPU ARM64 tanpa emulasi.", noteEn: "x86_64 machine instructions (PE32+) cannot run on ARM64 CPUs without emulation." }
+        ],
+        blockersId: [
+          "Ditolak oleh Kebijakan Anti-Emulasi PC2ANDROID: Biner Windows .exe terkompilasi tanpa kode sumber tidak dapat dikonversi menjadi aplikasi Android ARM64 native.",
+          "PC2ANDROID tidak menggunakan Wine, Proton, Box64, atau wrapper EXE."
+        ],
+        blockersEn: [
+          "Blocked by PC2ANDROID Anti-Emulation Policy: Compiled Windows .exe binaries without source code cannot be rebuilt into native ARM64 Android apps.",
+          "PC2ANDROID never uses Wine, Proton, Box64, or EXE wrappers."
+        ],
+        modsId: [
+          "Impor folder proyek kode sumber asli (C/C++, Godot, Unity, atau Unreal) untuk melanjutkan porting."
+        ],
+        modsEn: [
+          "Import the original source code project folder (C/C++, Godot, Unity, or Unreal) to proceed with porting."
+        ],
+        buildSteps: [],
+        apkSizeKb: 0,
+        elfLibs: []
+      }
+    ];
+
+    // =========================================================================
+    // 3. REVERSIBLE PATCH AUDIT DATA & TOUCH CONTROLS STATE
+    // =========================================================================
+    const INITIAL_PATCHES = [
+      {
+        id: "patch-cmake",
+        file: "CMakeLists.txt",
+        action: "CREATED",
+        approved: true,
+        descId: "Konfigurasi CMake ARM64 (GLESv3/EGL/OpenSLES) untuk libpc2android_game.so",
+        descEn: "ARM64 CMake configuration (GLESv3/EGL/OpenSLES) for libpc2android_game.so",
+        diff: `+ cmake_minimum_required(VERSION 3.22.1)
++ project(pc2android_port LANGUAGES C CXX)
++ set(CMAKE_CXX_STANDARD 17)
++ add_library(pc2android_game SHARED src/main.cpp src/renderer_gles3.cpp)
++ target_link_libraries(pc2android_game android log GLESv3 EGL OpenSLES m dl)`
+      },
+      {
+        id: "patch-manifest",
+        file: "AndroidManifest.xml",
+        action: "CREATED",
+        approved: true,
+        descId: "AndroidManifest NativeActivity dengan android:hasCode=\"false\" (tanpa butuh javac/d8 on-device)",
+        descEn: "NativeActivity AndroidManifest with android:hasCode=\"false\" (no on-device javac/d8 required)",
+        diff: `+ <manifest package="com.pc2android.port.cuberunner3d">
++   <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="34" />
++   <uses-feature android:glEsVersion="0x00030000" android:required="true" />
++   <application android:hasCode="false" android:extractNativeLibs="true">
++     <activity android:name="android.app.NativeActivity" android:screenOrientation="sensorLandscape" android:exported="true">
++       <meta-data android:name="android.app.lib_name" android:value="pc2android_game" />
++     </activity>
++   </application>
++ </manifest>`
+      },
+      {
+        id: "patch-godot",
+        file: "export_presets.cfg",
+        action: "MODIFIED",
+        approved: true,
+        descId: "Target ABI arm64-v8a=true dan kompresi tekstur VRAM ETC2/ASTC",
+        descEn: "Target ABI arm64-v8a=true and VRAM ETC2/ASTC texture compression",
+        diff: `- architectures/x86_64=true
++ architectures/armeabi-v7a=false
++ architectures/arm64-v8a=true
++ architectures/x86=false
++ architectures/x86_64=false`
+      },
+      {
+        id: "patch-dx11",
+        file: "src/RendererGLES3.cpp",
+        action: "MODIFIED",
+        approved: false,
+        descId: "Usulan AI: Migrasi swapchain & draw call DirectX 11 ke EGL + OpenGL ES 3.0",
+        descEn: "AI Proposal: Migrate DirectX 11 swapchain & draw calls to EGL + OpenGL ES 3.0",
+        diff: `- #include <d3d11.h>
+- IDXGISwapChain* g_pSwapChain = nullptr;
++ #include <EGL/egl.h>
++ #include <GLES3/gl3.h>
++ EGLDisplay g_eglDisplay = EGL_NO_DISPLAY;
++ EGLSurface g_eglSurface = EGL_NO_SURFACE;`
+      }
+    ];
+
+    function getDefaultControls() {
+      return [
+        { id: "ctrl-move", type: "JOYSTICK", label: "MOVE", x: 0.16, y: 0.72, radius: 54, opacity: 0.85, sensitivity: 1.0, deadzone: 0.12, binding: "KEYCODE_WASD" },
+        { id: "ctrl-look", type: "JOYSTICK", label: "LOOK", x: 0.72, y: 0.68, radius: 46, opacity: 0.75, sensitivity: 1.25, deadzone: 0.15, binding: "MOUSE_DELTA_XY" },
+        { id: "ctrl-jump", type: "BUTTON", label: "JUMP", x: 0.88, y: 0.78, radius: 32, opacity: 0.88, sensitivity: 1.0, deadzone: 0.0, binding: "KEYCODE_SPACE" },
+        { id: "ctrl-act", type: "BUTTON", label: "ACT", x: 0.82, y: 0.54, radius: 28, opacity: 0.85, sensitivity: 1.0, deadzone: 0.0, binding: "KEYCODE_E" }
+      ];
+    }
+
+    // =========================================================================
+    // 4. GLOBAL APPLICATION STATE
+    // =========================================================================
+    const state = {
+      lang: "id",
+      activeScreen: "dashboard",
+      selectedProjectId: "cuberunner3d",
+      // Build Center State
+      simLowRam: false,
+      simMissingNdk: false,
+      simConfirmLarge: false,
+      buildStage: "IDLE", // IDLE | RUNNING | SUCCEEDED_VALIDATED | FAILED
+      buildProgress: 0,
+      buildLogs: [
+        "[READY] Toolchain ARM64 terdeteksi di nativeLibraryDir (Clang 18, CMake 3.28, Ninja 1.11, AAPT2, zipalign).",
+        "[INFO] Pilih 'Build APK ARM64' untuk memulai kompilasi native murni tanpa emulasi."
+      ],
+      logFilter: "ALL",
+      buildDurationMs: null,
+      buildTimerId: null,
+      // Touch Designer State
+      controls: getDefaultControls(),
+      selectedControlId: "ctrl-move",
+      snapToGrid: true,
+      showJsonPreview: false,
+      // AI & Patches State
+      patches: JSON.parse(JSON.stringify(INITIAL_PATCHES)),
+      aiMessages: [
+        {
+          role: "assistant",
+          textId: "Halo! Saya Asisten Porting AI PC2ANDROID. Saya telah memindai 5 proyek di workspace Anda. Pilih file patch di sebelah kiri untuk meninjau diff, atau tanyakan cara memigrasikan DirectX 11 / Win32 ke Android ARM64.",
+          textEn: "Hello! I am PC2ANDROID's AI Porting Assistant. I have indexed 5 projects in your workspace. Select any patch on the left to inspect its diff, or ask how to migrate DirectX 11 / Win32 to Android ARM64."
+        }
+      ]
+    };
+
+    function t(key) {
+      return (I18N[state.lang] && I18N[state.lang][key]) || key;
+    }
+
+    function getSelectedProject() {
+      return PROJECTS.find(p => p.id === state.selectedProjectId) || PROJECTS[0];
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById("toast-banner");
+      document.getElementById("toast-message").textContent = msg;
+      el.classList.remove("translate-y-4", "opacity-0");
+      clearTimeout(window._toastTimeout);
+      window._toastTimeout = setTimeout(() => {
+        el.classList.add("translate-y-4", "opacity-0");
+      }, 2400);
+    }
+
+    function copyTextSafely(text, successMsg) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+        showToast(successMsg || (state.lang === "id" ? "Disalin ke clipboard!" : "Copied to clipboard!"));
+      } catch (e) {
+        showToast("Clipboard unavailable");
+      }
+      document.body.removeChild(ta);
+    }
+
+    // =========================================================================
+    // 5. NAVIGATION & LANGUAGE SWITCHING
+    // =========================================================================
+    const NAV_ITEMS = [
+      { id: "dashboard", labelKey: "nav_dashboard", icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />` },
+      { id: "analyzer", labelKey: "nav_analyzer", icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />` },
+      { id: "build", labelKey: "nav_build", icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />` },
+      { id: "controls", labelKey: "nav_controls", icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />` },
+      { id: "ai", labelKey: "nav_ai", icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />` }
+    ];
+
+    function setLanguage(lang) {
+      state.lang = lang;
+      document.documentElement.lang = lang;
+      document.getElementById("btn-lang-id").className = lang === "id"
+        ? "px-2 py-1 rounded-md font-bold transition bg-cyanAccent text-obsidian"
+        : "px-2 py-1 rounded-md font-semibold transition text-textSecondary hover:text-textPrimary";
+      document.getElementById("btn-lang-en").className = lang === "en"
+        ? "px-2 py-1 rounded-md font-bold transition bg-cyanAccent text-obsidian"
+        : "px-2 py-1 rounded-md font-semibold transition text-textSecondary hover:text-textPrimary";
+      document.getElementById("app-subtitle").textContent = t("subtitle");
+      document.querySelectorAll("[data-i18n]").forEach(el => {
+        el.textContent = t(el.getAttribute("data-i18n"));
+      });
+      renderNav();
+      renderActiveScreen();
+    }
+
+    function navigateTo(screenId, projectId = null) {
+      if (projectId) {
+        state.selectedProjectId = projectId;
+        document.getElementById("header-active-project").textContent = getSelectedProject().name;
+      }
+      state.activeScreen = screenId;
+      renderNav();
+      renderActiveScreen();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function renderNav() {
+      const desktopNav = document.getElementById("desktop-nav");
+      const mobileNav = document.getElementById("mobile-nav");
+
+      desktopNav.innerHTML = NAV_ITEMS.map(item => {
+        const active = state.activeScreen === item.id;
+        return `
+          <button onclick="navigateTo('${item.id}')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm font-medium transition ${
+            active
+              ? "bg-cyanAccent/15 text-cyanAccent border border-cyanAccent/30 font-semibold"
+              : "text-textSecondary hover:text-textPrimary hover:bg-elevated/60 border border-transparent"
+          }">
+            <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">${item.icon}</svg>
+            <span class="truncate">${t(item.labelKey)}</span>
+          </button>
+        `;
+      }).join("");
+
+      mobileNav.innerHTML = NAV_ITEMS.map(item => {
+        const active = state.activeScreen === item.id;
+        return `
+          <button onclick="navigateTo('${item.id}')" class="flex flex-col items-center justify-center py-1.5 px-1 rounded-lg transition ${
+            active ? "text-cyanAccent" : "text-textSecondary hover:text-textPrimary"
+          }">
+            <svg class="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">${item.icon}</svg>
+            <span class="text-[10px] font-medium truncate max-w-full">${t(item.labelKey)}</span>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function renderActiveScreen() {
+      const container = document.getElementById("screen-container");
+      switch (state.activeScreen) {
+        case "dashboard":
+          container.innerHTML = renderDashboardScreen();
+          break;
+        case "analyzer":
+          container.innerHTML = renderAnalyzerScreen();
+          break;
+        case "build":
+          container.innerHTML = renderBuildCenterScreen();
+          attachBuildLogAutoScroll();
+          break;
+        case "controls":
+          container.innerHTML = renderTouchControlsScreen();
+          attachCanvasDragHandlers();
+          break;
+        case "ai":
+          container.innerHTML = renderAiDiffScreen();
+          break;
+      }
+    }
+
+    // =========================================================================
+    // SCREEN 1: DASBOR (DASHBOARD)
+    // =========================================================================
+    function getStatusBadge(feasibility) {
+      switch (feasibility) {
+        case "DIRECT_ON_DEVICE_ELIGIBLE":
+          return { label: t("status_ready"), cls: "bg-emeraldSuccess/15 text-emeraldSuccess border-emeraldSuccess/30" };
+        case "SOURCE_REWRITE_REQUIRED":
+          return { label: t("status_rewrite"), cls: "bg-amberWarning/15 text-amberWarning border-amberWarning/30" };
+        case "EXTERNAL_TOOLCHAIN_REQUIRED":
+          return { label: t("status_external"), cls: "bg-violetInfo/15 text-violetInfo border-violetInfo/30" };
+        default:
+          return { label: t("status_nosource"), cls: "bg-coralError/15 text-coralError border-coralError/30" };
+      }
+    }
+
+    function renderDashboardScreen() {
+      const tools = [
+        { name: "ARM64 Host", ok: true },
+        { name: "Clang/LLVM 18", ok: !state.simMissingNdk },
+        { name: "CMake 3.28", ok: !state.simMissingNdk },
+        { name: "Ninja 1.11", ok: !state.simMissingNdk },
+        { name: "AAPT2 + zipalign", ok: !state.simMissingNdk },
+        { name: "NDK Sysroot r27", ok: !state.simMissingNdk },
+        { name: "Godot .tpz ARM64", ok: true }
+      ];
+
+      const freeRamDisplay = state.simLowRam ? "480 MB" : "3,420 MB";
+      const ramColor = state.simLowRam ? "text-coralError" : "text-emeraldSuccess";
+
+      return `
+        <div class="space-y-4">
+          <!-- KPI METRIC CARDS -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2.5">
+            ${renderKpiCard(t("kpi_total"), "5", "text-cyanAccent")}
+            ${renderKpiCard(t("kpi_ready"), "2", "text-emeraldSuccess")}
+            ${renderKpiCard(t("kpi_blockers"), "3", "text-amberWarning")}
+            ${renderKpiCard(t("kpi_success"), "4", "text-emeraldSuccess")}
+            ${renderKpiCard(t("kpi_failed"), "1", "text-coralError")}
+          </div>
+
+          <!-- ON-DEVICE ARM64 ENVIRONMENT & TOOLCHAIN CARD -->
+          <section class="bg-panel border border-borderSubtle rounded-xl p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-xs font-semibold text-cyanAccent tracking-wide">${t("env_title")}</span>
+              <button onclick="showToast(state.lang === 'id' ? 'Memeriksa ulang binary ARM64 di nativeLibraryDir...' : 'Re-probing ARM64 binaries in nativeLibraryDir...')" class="p-1.5 rounded-lg bg-elevated border border-borderSubtle hover:border-cyanAccent/50 text-textSecondary hover:text-cyanAccent transition" title="Refresh Toolchain">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Storage & RAM Progress -->
+            <div class="space-y-1.5">
+              <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span class="text-textSecondary">${t("storage_free")}: <strong class="font-mono text-textPrimary">18.4 GB / 128 GB</strong></span>
+                <span class="font-mono ${ramColor}">${t("ram_free")}: <strong>${freeRamDisplay}</strong></span>
+              </div>
+              <div class="w-full h-2 bg-elevated rounded-full overflow-hidden">
+                <div class="h-full bg-cyanAccent rounded-full" style="width: 85.6%"></div>
+              </div>
+            </div>
+
+            <div class="border-t border-borderSubtle pt-3 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+              ${tools.map(tool => `
+                <div class="flex items-center gap-2 px-2.5 py-2 rounded-lg border ${
+                  tool.ok
+                    ? "bg-emeraldSuccess/10 border-emeraldSuccess/25 text-textPrimary"
+                    : "bg-amberWarning/10 border-amberWarning/30 text-amberWarning"
+                }">
+                  <span class="w-2 h-2 rounded-full shrink-0 ${tool.ok ? "bg-emeraldSuccess" : "bg-amberWarning"}"></span>
+                  <span class="font-mono text-[11px] truncate">${tool.name}</span>
+                </div>
+              `).join("")}
+            </div>
+          </section>
+
+          <!-- IMPORTED PROJECTS LIST -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <span class="font-mono text-xs text-textSecondary">${t("projects_header")} (${PROJECTS.length})</span>
+            <span class="font-mono text-xs text-emeraldSuccess">${t("pure_arm64_badge")}</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            ${PROJECTS.map(p => {
+              const badge = getStatusBadge(p.feasibility);
+              const blockerCount = state.lang === "id" ? p.blockersId.length : p.blockersEn.length;
+              return `
+                <article class="bg-panel border border-borderSubtle hover:border-cyanAccent/40 rounded-xl p-4 flex flex-col justify-between gap-3 transition">
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0">
+                      <h2 class="text-base font-bold text-textPrimary truncate">${p.name}</h2>
+                      <p class="font-mono text-xs text-textSecondary truncate">${p.engineLabel} • ${p.language}</p>
+                    </div>
+                    <span class="font-mono text-[11px] px-2.5 py-1 rounded-md border shrink-0 ${badge.cls}">
+                      ${badge.label}
+                    </span>
+                  </div>
+
+                  <div class="flex items-center justify-between text-xs text-textSecondary bg-elevated/60 px-3 py-2 rounded-lg border border-borderSubtle/60">
+                    <span>${state.lang === "id" ? "Skor Kompatibilitas" : "Compatibility Score"}: <strong class="font-mono text-textPrimary">${p.score}/100</strong></span>
+                    <span>${t("kpi_blockers")}: <strong class="font-mono ${blockerCount > 0 ? "text-amberWarning" : "text-emeraldSuccess"}">${blockerCount}</strong></span>
+                  </div>
+
+                  <div class="flex flex-wrap gap-2">
+                    <button onclick="navigateTo('analyzer', '${p.id}')" class="flex-1 min-h-[38px] px-3 py-1.5 rounded-lg bg-elevated hover:bg-elevated/80 border border-borderSubtle text-xs font-semibold text-textPrimary transition">
+                      ${t("btn_analyzer")}
+                    </button>
+                    <button onclick="navigateTo('controls', '${p.id}')" class="flex-1 min-h-[38px] px-3 py-1.5 rounded-lg bg-elevated hover:bg-elevated/80 border border-borderSubtle text-xs font-semibold text-textPrimary transition">
+                      ${t("btn_controls")}
+                    </button>
+                    <button onclick="navigateTo('build', '${p.id}')" class="flex-1 min-h-[38px] px-3 py-1.5 rounded-lg bg-cyanAccent hover:bg-cyanAccent/90 text-xs font-bold text-obsidian transition">
+                      ${t("btn_build")}
+                    </button>
+                  </div>
+                </article>
+              `;
+            }).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderKpiCard(label, value, accentClass) {
+      return `
+        <div class="bg-panel border border-borderSubtle rounded-xl p-3.5">
+          <div class="text-xs text-textSecondary truncate">${label}</div>
+          <div class="font-mono text-2xl font-bold mt-1 ${accentClass}">${value}</div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // SCREEN 2: IMPOR & ANALISIS MESIN (IMPORT & ENGINE ANALYZER)
+    // =========================================================================
+    function renderAnalyzerScreen() {
+      const p = getSelectedProject();
+      const badge = getStatusBadge(p.feasibility);
+      const blockers = state.lang === "id" ? p.blockersId : p.blockersEn;
+      const mods = state.lang === "id" ? p.modsId : p.modsEn;
+
+      return `
+        <div class="space-y-4">
+          <!-- SIMULATED SAF DROPZONE & SECURITY GUARD -->
+          <section class="bg-panel border border-dashed border-cyanAccent/40 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="font-mono text-xs font-bold text-cyanAccent">${t("import_saf_title")}</span>
+                <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-emeraldSuccess/15 text-emeraldSuccess border border-emeraldSuccess/30">SAFE-ARCHIVE GUARD</span>
+              </div>
+              <p class="text-xs text-textSecondary">${t("import_saf_desc")}</p>
+            </div>
+            <button onclick="openZipSecurityModal()" class="shrink-0 min-h-[40px] px-3.5 py-2 rounded-lg bg-elevated hover:border-cyanAccent border border-borderSubtle text-xs font-mono font-semibold text-cyanAccent transition">
+              ${t("btn_test_zip_guard")}
+            </button>
+          </section>
+
+          <!-- PROJECT SWITCHER TABS -->
+          <div class="flex gap-2 overflow-x-auto pb-1">
+            ${PROJECTS.map(proj => {
+              const active = proj.id === p.id;
+              return `
+                <button onclick="navigateTo('analyzer', '${proj.id}')" class="shrink-0 min-h-[38px] px-3.5 py-1.5 rounded-lg font-mono text-xs font-semibold border transition ${
+                  active
+                    ? "bg-cyanAccent text-obsidian border-cyanAccent"
+                    : "bg-panel text-textSecondary border-borderSubtle hover:text-textPrimary"
+                }">
+                  ${proj.name}
+                </button>
+              `;
+            }).join("")}
+          </div>
+
+          <!-- MAIN COMPATIBILITY REPORT CARD -->
+          <section class="bg-panel border border-borderSubtle rounded-xl p-4 sm:p-5 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-borderSubtle pb-4">
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <h2 class="text-lg font-bold text-textPrimary">${p.name}</h2>
+                  <span class="font-mono text-xs px-2.5 py-0.5 rounded border ${badge.cls}">${badge.label}</span>
+                </div>
+                <p class="font-mono text-xs text-textSecondary mt-1">
+                  Engine: <span class="text-textPrimary">${p.engineLabel}</span> (${p.engineVersion}) • Arch: <span class="text-textPrimary">${p.pcArch}</span>
+                </p>
+              </div>
+
+              <div class="bg-elevated border border-borderSubtle rounded-xl px-4 py-2.5 text-center shrink-0">
+                <div class="font-mono text-[10px] text-textSecondary uppercase">${state.lang === "id" ? "Skor Audit" : "Audit Score"}</div>
+                <div class="font-mono text-2xl font-bold ${p.score >= 80 ? "text-emeraldSuccess" : p.score >= 45 ? "text-amberWarning" : "text-coralError"}">
+                  ${p.score}<span class="text-sm text-textMuted">/100</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- WEIGHTED SCORE BREAKDOWN -->
+            <div class="space-y-2.5">
+              <div class="text-xs font-mono text-cyanAccent">${state.lang === "id" ? "RINCIAN SKOR TERTIMBANG (35% / 30% / 35%)" : "WEIGHTED SCORE BREAKDOWN (35% / 30% / 35%)"}</div>
+              <p class="text-xs text-textMuted">${t("score_formula")}</p>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                ${p.breakdown.map(item => `
+                  <div class="bg-elevated/80 border border-borderSubtle rounded-xl p-3 space-y-1.5">
+                    <div class="flex items-center justify-between text-xs">
+                      <span class="font-semibold text-textPrimary">${state.lang === "id" ? item.catId : item.catEn}</span>
+                      <span class="font-mono text-cyanAccent">${item.weight}%</span>
+                    </div>
+                    <div class="font-mono text-lg font-bold ${item.raw >= 75 ? "text-emeraldSuccess" : item.raw >= 40 ? "text-amberWarning" : "text-coralError"}">
+                      ${item.raw}/100
+                    </div>
+                    <p class="text-[11px] text-textSecondary leading-relaxed">${state.lang === "id" ? item.noteId : item.noteEn}</p>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+
+            <!-- DETECTED APIS & HARDWARE ESTIMATES -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+              <div class="bg-obsidian/70 border border-borderSubtle rounded-xl p-3.5 space-y-2 text-xs">
+                <div class="font-mono text-cyanAccent font-semibold">${state.lang === "id" ? "API & DEPENDENSI TERDETEKSI" : "DETECTED APIS & DEPENDENCIES"}</div>
+                <div><span class="text-textMuted">Graphics API:</span> <span class="font-mono text-textPrimary">${p.graphicsApis.join(", ")}</span></div>
+                <div><span class="text-textMuted">Shaders:</span> <span class="font-mono text-textPrimary">${p.shaderModels.join(", ")}</span></div>
+                <div><span class="text-textMuted">Audio / Input:</span> <span class="font-mono text-textPrimary">${p.audioLibs.join(", ")} • ${p.inputSystems.join(", ")}</span></div>
+                <div>
+                  <span class="text-textMuted">Windows-Only APIs:</span>
+                  ${p.winDeps.length === 0
+                    ? `<span class="font-mono text-emeraldSuccess">0 (Clean)</span>`
+                    : `<span class="font-mono text-coralError">${p.winDeps.join(", ")}</span>`
+                  }
+                </div>
+              </div>
+
+              <div class="bg-obsidian/70 border border-borderSubtle rounded-xl p-3.5 space-y-2 text-xs">
+                <div class="font-mono text-cyanAccent font-semibold">${state.lang === "id" ? "ESTIMASI KEBUTUHAN TARGET ARM64" : "ESTIMATED ARM64 TARGET REQUIREMENTS"}</div>
+                <div><span class="text-textMuted">Recommended Backend:</span> <span class="font-mono text-emeraldSuccess">${p.recBackend}</span></div>
+                <div><span class="text-textMuted">Estimated Storage:</span> <span class="font-mono text-textPrimary">${p.estStorageMb} MB</span></div>
+                <div><span class="text-textMuted">Estimated RAM:</span> <span class="font-mono text-textPrimary">${p.estRamMb > 0 ? p.estRamMb + " MB" : "UNKNOWN (No Source)"}</span></div>
+              </div>
+            </div>
+
+            <!-- BLOCKERS & REQUIRED MODIFICATIONS -->
+            ${blockers.length > 0 ? `
+              <div class="bg-coralError/10 border border-coralError/30 rounded-xl p-3.5 space-y-1.5">
+                <div class="font-mono text-xs font-bold text-coralError">${state.lang === "id" ? "PENGHAMBAT TERDETEKSI (BLOCKERS)" : "DETECTED BLOCKERS"}</div>
+                <ul class="list-disc list-inside text-xs text-textPrimary space-y-1">
+                  ${blockers.map(b => `<li>${b}</li>`).join("")}
+                </ul>
+              </div>
+            ` : ""}
+
+            <div class="bg-elevated/60 border border-borderSubtle rounded-xl p-3.5 space-y-1.5">
+              <div class="font-mono text-xs font-bold text-emeraldSuccess">${state.lang === "id" ? "RENCANA MIGRASI & MODIFIKASI" : "MIGRATION PLAN & MODIFICATIONS"}</div>
+              <ul class="list-disc list-inside text-xs text-textSecondary space-y-1">
+                ${mods.map(m => `<li>${m}</li>`).join("")}
+              </ul>
+            </div>
+
+            <div class="flex flex-wrap justify-end gap-2.5 pt-1">
+              <button onclick="navigateTo('ai', '${p.id}')" class="min-h-[40px] px-4 py-2 rounded-lg bg-elevated border border-borderSubtle hover:border-cyanAccent text-xs font-semibold text-textPrimary transition">
+                ${state.lang === "id" ? "Buka Asisten AI & Diff" : "Open AI Assistant & Diffs"}
+              </button>
+              <button onclick="navigateTo('build', '${p.id}')" class="min-h-[40px] px-4 py-2 rounded-lg bg-cyanAccent hover:bg-cyanAccent/90 text-xs font-bold text-obsidian transition">
+                ${state.lang === "id" ? "Lanjut ke Pusat Build →" : "Proceed to Build Center →"}
+              </button>
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // SCREEN 3: PUSAT BUILD ARM64 (BUILD CENTER + APK GATEKEEPER)
+    // =========================================================================
+    function renderBuildCenterScreen() {
+      const p = getSelectedProject();
+      const freeRam = state.simLowRam ? 480 : 3420;
+      const freeStorage = 18400;
+      const ramOk = freeRam >= (p.estRamMb || 512);
+      const storageOk = freeStorage >= p.estStorageMb;
+      const toolsOk = !state.simMissingNdk;
+
+      // Check if DirectXShooter has its AI patch approved
+      const dxPatchApproved = state.patches.find(x => x.id === "patch-dx11")?.approved;
+      const projectBuildable =
+        p.feasibility === "DIRECT_ON_DEVICE_ELIGIBLE" ||
+        (p.id === "directxshooter" && dxPatchApproved);
+
+      const canStartBuild = projectBuildable && ramOk && storageOk && toolsOk && state.buildStage !== "RUNNING";
+
+      const filteredLogs = state.buildLogs.filter(line => {
+        if (state.logFilter === "WARNINGS") return line.toLowerCase().includes("warning");
+        if (state.logFilter === "ERRORS") return line.toLowerCase().includes("error") || line.toLowerCase().includes("blocker");
+        return true;
+      });
+
+      return `
+        <div class="space-y-4">
+          <!-- PROJECT SELECTOR BAR -->
+          <div class="flex gap-2 overflow-x-auto pb-1">
+            ${PROJECTS.map(proj => `
+              <button onclick="selectProjectInBuild('${proj.id}')" class="shrink-0 min-h-[38px] px-3 py-1.5 rounded-lg font-mono text-xs font-semibold border transition ${
+                proj.id === p.id
+                  ? "bg-cyanAccent text-obsidian border-cyanAccent"
+                  : "bg-panel text-textSecondary border-borderSubtle hover:text-textPrimary"
+              }">
+                ${proj.name}
+              </button>
+            `).join("")}
+          </div>
+
+          <!-- RESOURCE & TOOLCHAIN GUARD CARD -->
+          <section class="bg-panel border ${ramOk && toolsOk && projectBuildable ? "border-borderSubtle" : "border-amberWarning"} rounded-xl p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="font-mono text-xs font-bold text-cyanAccent">${t("build_guard_title")}</span>
+              <span class="font-mono text-xs text-textSecondary">${p.packageId} • <strong class="text-textPrimary">arm64-v8a</strong></span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <div class="bg-elevated/70 px-3 py-2 rounded-lg border border-borderSubtle flex justify-between">
+                <span class="text-textSecondary">RAM:</span>
+                <span class="font-mono font-semibold ${ramOk ? "text-emeraldSuccess" : "text-coralError"}">
+                  ${freeRam} MB ${state.lang === "id" ? "tersedia" : "free"} (Min: ${p.estRamMb || 512} MB)
+                </span>
+              </div>
+              <div class="bg-elevated/70 px-3 py-2 rounded-lg border border-borderSubtle flex justify-between">
+                <span class="text-textSecondary">Storage:</span>
+                <span class="font-mono font-semibold ${storageOk ? "text-emeraldSuccess" : "text-coralError"}">
+                  ${freeStorage} MB (Min: ${p.estStorageMb} MB)
+                </span>
+              </div>
+            </div>
+
+            <!-- Interactive Capability Guard Simulation Toggles -->
+            <div class="flex flex-wrap gap-3 pt-1 text-xs">
+              <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-obsidian px-2.5 py-1.5 rounded-lg border border-borderSubtle">
+                <input type="checkbox" ${state.simLowRam ? "checked" : ""} onchange="toggleSimFlag('simLowRam')" class="rounded" />
+                <span class="text-textSecondary">${t("sim_low_ram")}</span>
+              </label>
+              <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-obsidian px-2.5 py-1.5 rounded-lg border border-borderSubtle">
+                <input type="checkbox" ${state.simMissingNdk ? "checked" : ""} onchange="toggleSimFlag('simMissingNdk')" class="rounded" />
+                <span class="text-textSecondary">${t("sim_missing_ndk")}</span>
+              </label>
+              <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-obsidian px-2.5 py-1.5 rounded-lg border border-borderSubtle">
+                <input type="checkbox" ${state.simConfirmLarge ? "checked" : ""} onchange="toggleSimFlag('simConfirmLarge')" class="rounded" />
+                <span class="text-textSecondary">${t("sim_large_confirm")}</span>
+              </label>
+            </div>
+
+            ${!toolsOk ? `
+              <div class="font-mono text-xs text-amberWarning bg-amberWarning/10 border border-amberWarning/30 px-3 py-2 rounded-lg">
+                MISSING TOOLCHAIN: ARM64 Clang/LLVM, CMake, Ninja, NDK Sysroot r27 tidak ditemukan. Build diblokir untuk mencegah kegagalan kompilasi.
+              </div>
+            ` : ""}
+
+            ${!projectBuildable ? `
+              <div class="font-mono text-xs text-coralError bg-coralError/10 border border-coralError/30 px-3 py-2 rounded-lg space-y-1">
+                <div><strong>${state.lang === "id" ? "BUILD ON-DEVICE TIDAK TERSEDIA UNTUK PROYEK INI:" : "ON-DEVICE BUILD UNAVAILABLE FOR THIS PROJECT:"}</strong></div>
+                <div>${state.lang === "id" ? p.blockersId[0] : p.blockersEn[0]}</div>
+                ${p.id === "directxshooter" ? `
+                  <button onclick="navigateTo('ai', 'directxshooter')" class="mt-1 underline text-cyanAccent font-semibold">
+                    ${state.lang === "id" ? "→ Setujui patch migrasi DirectX11-ke-GLES3 di Asisten AI untuk mengaktifkan build" : "→ Approve DirectX11-to-GLES3 migration patch in AI Assistant to unlock build"}
+                  </button>
+                ` : ""}
+              </div>
+            ` : ""}
+          </section>
+
+          <!-- BUILD ACTION BAR & PROGRESS -->
+          <section class="bg-panel border border-borderSubtle rounded-xl p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div class="text-sm font-bold text-textPrimary">
+                  ${state.buildStage === "RUNNING"
+                    ? (state.lang === "id" ? "Mengompilasi Native ARM64..." : "Compiling Native ARM64...")
+                    : state.buildStage === "SUCCEEDED_VALIDATED"
+                      ? (state.lang === "id" ? "Kompilasi & Validasi Selesai" : "Compilation & Validation Complete")
+                      : (state.lang === "id" ? "Siap Memulai Pipeline Build" : "Ready to Start Build Pipeline")
+                  }
+                </div>
+                <div class="font-mono text-xs text-textMuted">
+                  ${state.buildDurationMs ? `${state.lang === "id" ? "Durasi" : "Duration"}: ${(state.buildDurationMs / 1000).toFixed(2)}s • Target: arm64-v8a` : "Pipeline: CMake/GDPC → Ninja/Pack → AAPT2 → zipalign → apksig"}
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                ${state.buildStage === "RUNNING" ? `
+                  <button onclick="cancelBuild()" class="min-h-[42px] px-4 py-2 rounded-xl bg-coralError hover:bg-coralError/90 text-white font-bold text-xs transition">
+                    ${t("btn_cancel_build")}
+                  </button>
+                ` : `
+                  <button onclick="handleStartBuildClick()" ${canStartBuild ? "" : "disabled"} class="min-h-[42px] px-5 py-2 rounded-xl font-bold text-xs transition ${
+                    canStartBuild
+                      ? "bg-emeraldSuccess hover:bg-emeraldSuccess/90 text-obsidian cursor-pointer shadow-lg shadow-emeraldSuccess/20"
+                      : "bg-elevated text-textMuted border border-borderSubtle cursor-not-allowed"
+                  }">
+                    ▶ ${t("btn_build_apk")}
+                  </button>
+                `}
+              </div>
+            </div>
+
+            ${state.buildStage === "RUNNING" ? `
+              <div class="w-full h-2 bg-elevated rounded-full overflow-hidden">
+                <div class="h-full bg-cyanAccent transition-all duration-300" style="width: ${state.buildProgress}%"></div>
+              </div>
+            ` : ""}
+          </section>
+
+          <!-- POST-BUILD APK VALIDATION GATEKEEPER CARD -->
+          ${state.buildStage === "SUCCEEDED_VALIDATED" ? `
+            <section class="bg-emeraldSuccess/12 border border-emeraldSuccess rounded-xl p-4 space-y-2.5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emeraldSuccess"></span>
+                  <span class="font-mono text-xs sm:text-sm font-bold text-emeraldSuccess">BUILD SUCCESS • APK TERVALIDASI</span>
+                </div>
+                <button onclick="openApkInspectorModal()" class="min-h-[38px] px-3.5 py-1.5 rounded-lg bg-emeraldSuccess text-obsidian font-bold text-xs hover:bg-emeraldSuccess/90 transition">
+                  ${t("btn_inspect_apk")}
+                </button>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 font-mono text-[11px] text-textPrimary">
+                <div class="bg-obsidian/60 px-2.5 py-1.5 rounded border border-emeraldSuccess/30">✓ AndroidManifest.xml (Binary)</div>
+                <div class="bg-obsidian/60 px-2.5 py-1.5 rounded border border-emeraldSuccess/30">✓ ELF EM_AARCH64 (0x00B7)</div>
+                <div class="bg-obsidian/60 px-2.5 py-1.5 rounded border border-emeraldSuccess/30">✓ Size: ${p.apkSizeKb.toLocaleString()} KB</div>
+                <div class="bg-obsidian/60 px-2.5 py-1.5 rounded border border-emeraldSuccess/30">✓ ApkVerifier v2/v3: VALID</div>
+              </div>
+            </section>
+          ` : ""}
+
+          <!-- LIVE STREAMING TERMINAL CONSOLE -->
+          <section class="bg-terminalBg border border-borderSubtle rounded-xl overflow-hidden flex flex-col">
+            <div class="bg-panel px-3 py-2 border-b border-borderSubtle flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5">
+                ${["ALL", "WARNINGS", "ERRORS"].map(f => `
+                  <button onclick="setLogFilter('${f}')" class="px-2.5 py-1 rounded-md font-mono text-[11px] font-semibold transition ${
+                    state.logFilter === f
+                      ? "bg-cyanAccent/20 text-cyanAccent border border-cyanAccent/40"
+                      : "bg-elevated text-textSecondary hover:text-textPrimary"
+                  }">${f}</button>
+                `).join("")}
+              </div>
+              <button onclick="copyTextSafely(state.buildLogs.join('\\n'))" class="px-2.5 py-1 rounded-md bg-elevated border border-borderSubtle hover:border-cyanAccent text-xs font-mono text-textSecondary hover:text-textPrimary transition">
+                ${t("btn_copy_logs")}
+              </button>
+            </div>
+
+            <div id="build-terminal-scroll" class="p-3.5 h-64 overflow-y-auto font-mono text-xs space-y-1.5 leading-relaxed">
+              ${filteredLogs.map((line, idx) => {
+                let color = "text-textSecondary";
+                if (line.includes("BUILD SUCCESS")) color = "text-emeraldSuccess font-bold";
+                else if (line.toLowerCase().includes("error") || line.toLowerCase().includes("blocker")) color = "text-coralError";
+                else if (line.toLowerCase().includes("warning")) color = "text-amberWarning";
+                else if (line.startsWith("[")) color = "text-cyanAccent";
+                return `<div class="${color}"><span class="text-textMuted select-none mr-2">${String(idx + 1).padStart(2, "0")} |</span>${escapeHtml(line)}</div>`;
+              }).join("")}
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
+    function selectProjectInBuild(projectId) {
+      cancelBuild(false);
+      state.selectedProjectId = projectId;
+      state.buildStage = "IDLE";
+      state.buildProgress = 0;
+      state.buildDurationMs = null;
+      const p = getSelectedProject();
+      state.buildLogs = [
+        `[SELECTED] Proyek aktif: ${p.name} (${p.engineLabel})`,
+        `[TARGET] Package ID: ${p.packageId} • ABI: arm64-v8a`
+      ];
+      document.getElementById("header-active-project").textContent = p.name;
+      renderActiveScreen();
+    }
+
+    function toggleSimFlag(flagName) {
+      state[flagName] = !state[flagName];
+      renderActiveScreen();
+    }
+
+    function setLogFilter(filter) {
+      state.logFilter = filter;
+      renderActiveScreen();
+    }
+
+    function handleStartBuildClick() {
+      const p = getSelectedProject();
+      if (state.simConfirmLarge || p.estStorageMb >= 1500) {
+        openModal(
+          state.lang === "id" ? "Konfirmasi Build Besar" : "Confirm Large Build",
+          `<p>${state.lang === "id"
+            ? `Proyek <strong>${p.name}</strong> membutuhkan estimasi <strong>${p.estRamMb} MB RAM</strong> dan <strong>${p.estStorageMb} MB penyimpanan bebas</strong> untuk kompilasi ARM64 on-device. Lanjutkan?`
+            : `Project <strong>${p.name}</strong> requires an estimated <strong>${p.estRamMb} MB RAM</strong> and <strong>${p.estStorageMb} MB free storage</strong> for on-device ARM64 compilation. Proceed?`
+          }</p>`,
+          `
+            <button onclick="closeModal()" class="px-4 py-2 rounded-lg bg-elevated text-textSecondary text-xs font-semibold">${state.lang === "id" ? "Batal" : "Cancel"}</button>
+            <button onclick="closeModal(); startSimulatedBuild();" class="px-4 py-2 rounded-lg bg-cyanAccent text-obsidian text-xs font-bold">${state.lang === "id" ? "Mulai Kompilasi" : "Start Compilation"}</button>
+          `
+        );
+      } else {
+        startSimulatedBuild();
+      }
+    }
+
+    function startSimulatedBuild() {
+      const p = getSelectedProject();
+      const steps = p.buildSteps.length > 0 ? p.buildSteps : [
+        "[1/5] Preparing ARM64 build workspace...",
+        "[2/5] Compiling native libraries...",
+        "[3/5] Packaging resources with AAPT2...",
+        "[4/5] Aligning archive with zipalign -p 4...",
+        "[5/5] Signing APK with apksig...",
+        "BUILD SUCCESS: Validated ARM64 APK."
+      ];
+
+      state.buildStage = "RUNNING";
+      state.buildProgress = 8;
+      state.buildDurationMs = null;
+      state.buildLogs = [`[START] Memulai build on-device untuk ${p.name} (arm64-v8a)...`];
+      renderActiveScreen();
+
+      const startTime = performance.now();
+      let stepIndex = 0;
+
+      state.buildTimerId = setInterval(() => {
+        if (stepIndex < steps.length) {
+          state.buildLogs.push(steps[stepIndex]);
+          stepIndex++;
+          state.buildProgress = Math.min(98, Math.round((stepIndex / steps.length) * 100));
+          renderActiveScreen();
+        } else {
+          clearInterval(state.buildTimerId);
+          state.buildTimerId = null;
+          state.buildStage = "SUCCEEDED_VALIDATED";
+          state.buildProgress = 100;
+          state.buildDurationMs = Math.round(performance.now() - startTime);
+          renderActiveScreen();
+        }
+      }, 320);
+    }
+
+    function cancelBuild(shouldRender = true) {
+      if (state.buildTimerId) {
+        clearInterval(state.buildTimerId);
+        state.buildTimerId = null;
+      }
+      if (state.buildStage === "RUNNING") {
+        state.buildStage = "IDLE";
+        state.buildLogs.push("[CANCELLED] Proses kompilasi dihentikan secara aman oleh pengguna (Process.destroyForcibly).");
+      }
+      if (shouldRender) renderActiveScreen();
+    }
+
+    function attachBuildLogAutoScroll() {
+      const el = document.getElementById("build-terminal-scroll");
+      if (el) el.scrollTop = el.scrollHeight;
+    }
+
+    // =========================================================================
+    // SCREEN 4: DESAINER KONTROL SENTUH (INTERACTIVE DRAG-AND-DROP DESIGNER)
+    // =========================================================================
+    function renderTouchControlsScreen() {
+      const p = getSelectedProject();
+      const selected = state.controls.find(c => c.id === state.selectedControlId) || null;
+      const jsonExport = JSON.stringify({
+        schema_version: 1,
+        target_project: p.packageId,
+        controls: state.controls.map(c => ({
+          id: c.id,
+          type: c.type,
+          label: c.label,
+          x: Number(c.x.toFixed(3)),
+          y: Number(c.y.toFixed(3)),
+          radius_dp: c.radius,
+          opacity: Number(c.opacity.toFixed(2)),
+          sensitivity: Number(c.sensitivity.toFixed(2)),
+          deadzone: Number(c.deadzone.toFixed(2)),
+          binding: c.binding
+        }))
+      }, null, 2);
+
+      return `
+        <div class="space-y-4">
+          <!-- TOOLBAR -->
+          <div class="bg-panel border border-borderSubtle rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
+            <div class="min-w-0">
+              <h2 class="text-sm font-bold text-textPrimary truncate">${t("nav_controls")} • ${p.name}</h2>
+              <p class="font-mono text-[11px] text-textMuted truncate">${t("controls_hint")}</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button onclick="addTouchControl('BUTTON')" class="min-h-[36px] px-2.5 py-1.5 rounded-lg bg-elevated border border-borderSubtle hover:border-cyanAccent text-xs font-semibold text-textPrimary transition">
+                ${t("btn_add_button")}
+              </button>
+              <button onclick="addTouchControl('JOYSTICK')" class="min-h-[36px] px-2.5 py-1.5 rounded-lg bg-elevated border border-borderSubtle hover:border-cyanAccent text-xs font-semibold text-textPrimary transition">
+                ${t("btn_add_joystick")}
+              </button>
+              <button onclick="toggleTouchGrid()" class="min-h-[36px] px-2.5 py-1.5 rounded-lg border text-xs font-mono font-semibold transition ${
+                state.snapToGrid ? "bg-cyanAccent/20 text-cyanAccent border-cyanAccent/40" : "bg-elevated text-textSecondary border-borderSubtle"
+              }">
+                Grid 16×9
+              </button>
+              <button onclick="resetTouchPreset()" class="min-h-[36px] px-2.5 py-1.5 rounded-lg text-xs text-cyanAccent hover:underline">
+                ${t("btn_reset_preset")}
+              </button>
+              <button onclick="saveTouchLayout()" class="min-h-[36px] px-3 py-1.5 rounded-lg bg-emeraldSuccess text-obsidian font-bold text-xs hover:bg-emeraldSuccess/90 transition">
+                ${t("btn_save_layout")}
+              </button>
+            </div>
+          </div>
+
+          <!-- 16:9 INTERACTIVE VIEWPORT CANVAS -->
+          <div class="bg-panel border border-borderSubtle rounded-xl p-2 sm:p-3">
+            <div id="touch-viewport-canvas" class="relative w-full aspect-video max-h-[420px] mx-auto bg-terminalBg rounded-xl border border-borderSubtle overflow-hidden select-none touch-none ${state.snapToGrid ? "grid-canvas-bg" : ""}">
+              <!-- Center Crosshair -->
+              <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div class="w-6 h-6 rounded-full border border-cyanAccent/30"></div>
+              </div>
+              <div class="pointer-events-none absolute top-2.5 left-3 font-mono text-[10px] text-textMuted">
+                16:9 LANDSCAPE SAFE-ZONE • ${p.recBackend}
+              </div>
+
+              ${state.controls.map(ctrl => {
+                const isSel = ctrl.id === state.selectedControlId;
+                const diameterPx = Math.round(ctrl.radius * 1.65);
+                const isJoy = ctrl.type === "JOYSTICK";
+                return `
+                  <div
+                    data-ctrl-id="${ctrl.id}"
+                    style="
+                      left: ${(ctrl.x * 100).toFixed(2)}%;
+                      top: ${(ctrl.y * 100).toFixed(2)}%;
+                      width: ${diameterPx}px;
+                      height: ${diameterPx}px;
+                      transform: translate(-50%, -50%);
+                      opacity: ${ctrl.opacity};
+                    "
+                    class="touch-control-node absolute rounded-full flex flex-col items-center justify-center cursor-grab active:cursor-grabbing transition-shadow ${
+                      isJoy
+                        ? "bg-cyanAccent/20 border-2 " + (isSel ? "border-cyanAccent shadow-lg shadow-cyanAccent/30" : "border-cyanAccent/60")
+                        : "bg-emeraldSuccess/25 border-2 " + (isSel ? "border-cyanAccent shadow-lg shadow-cyanAccent/30" : "border-emeraldSuccess/70")
+                    }"
+                  >
+                    <span class="pointer-events-none font-mono font-bold text-[11px] text-textPrimary">${escapeHtml(ctrl.label)}</span>
+                    ${isJoy ? `<span class="pointer-events-none mt-1 w-3.5 h-3.5 rounded-full bg-cyanAccent"></span>` : ""}
+                  </div>
+                `;
+              }).join("")}
+            </div>
+          </div>
+
+          <!-- SELECTED CONTROL INSPECTOR -->
+          <section class="bg-panel border border-borderSubtle rounded-xl p-4 space-y-3">
+            ${selected ? `
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-borderSubtle pb-2.5">
+                <div class="font-mono text-xs text-cyanAccent font-bold">
+                  INSPEKTOR: ${escapeHtml(selected.label)} (${selected.type}) • X:${selected.x.toFixed(2)} Y:${selected.y.toFixed(2)}
+                </div>
+                <div class="flex items-center gap-2">
+                  <select onchange="updateSelectedControl('binding', this.value)" class="bg-elevated border border-borderSubtle rounded-lg px-2.5 py-1.5 font-mono text-xs text-textPrimary">
+                    ${["KEYCODE_WASD", "MOUSE_DELTA_XY", "KEYCODE_SPACE", "KEYCODE_E", "KEYCODE_SHIFT_LEFT", "BUTTON_A", "BUTTON_B", "BUTTON_R1"].map(code => `
+                      <option value="${code}" ${selected.binding === code ? "selected" : ""}>${code}</option>
+                    `).join("")}
+                  </select>
+                  <button onclick="deleteSelectedControl()" class="p-1.5 rounded-lg bg-coralError/15 border border-coralError/30 text-coralError hover:bg-coralError/25 text-xs font-mono">
+                    Hapus
+                  </button>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                <label class="space-y-1">
+                  <div class="flex justify-between font-mono text-textSecondary"><span>Radius</span><span class="text-textPrimary">${selected.radius} dp</span></div>
+                  <input type="range" min="20" max="80" step="1" value="${selected.radius}" oninput="updateSelectedControl('radius', Number(this.value))" class="w-full" />
+                </label>
+                <label class="space-y-1">
+                  <div class="flex justify-between font-mono text-textSecondary"><span>Opacity</span><span class="text-textPrimary">${Math.round(selected.opacity * 100)}%</span></div>
+                  <input type="range" min="0.2" max="1.0" step="0.05" value="${selected.opacity}" oninput="updateSelectedControl('opacity', Number(this.value))" class="w-full" />
+                </label>
+                <label class="space-y-1">
+                  <div class="flex justify-between font-mono text-textSecondary"><span>Sensitivity</span><span class="text-textPrimary">${selected.sensitivity.toFixed(2)}x</span></div>
+                  <input type="range" min="0.25" max="3.0" step="0.05" value="${selected.sensitivity}" oninput="updateSelectedControl('sensitivity', Number(this.value))" class="w-full" />
+                </label>
+                <label class="space-y-1">
+                  <div class="flex justify-between font-mono text-textSecondary"><span>Deadzone</span><span class="text-textPrimary">${Math.round(selected.deadzone * 100)}%</span></div>
+                  <input type="range" min="0" max="0.45" step="0.01" value="${selected.deadzone}" oninput="updateSelectedControl('deadzone', Number(this.value))" class="w-full" />
+                </label>
+              </div>
+            ` : `
+              <p class="text-xs text-textSecondary">${state.lang === "id" ? "Ketuk salah satu kontrol pada kanvas di atas untuk mengatur ukuran, opasitas, sensitivitas, dan keycode." : "Tap any control on the canvas above to configure size, opacity, sensitivity, and keycode."}</p>
+            `}
+
+            <!-- COLLAPSIBLE JSON OUTPUT PREVIEW -->
+            <div class="pt-1 border-t border-borderSubtle flex items-center justify-between">
+              <button onclick="toggleJsonPreview()" class="font-mono text-xs text-cyanAccent hover:underline">
+                ${state.showJsonPreview ? "▼" : "▶"} assets/pc2android_touch_layout.json
+              </button>
+              <button onclick="copyTextSafely(document.getElementById('touch-json-code')?.textContent || '')" class="font-mono text-xs text-textSecondary hover:text-textPrimary">
+                Copy JSON
+              </button>
+            </div>
+            ${state.showJsonPreview ? `
+              <pre id="touch-json-code" class="bg-terminalBg border border-borderSubtle rounded-lg p-3 font-mono text-[11px] text-emeraldSuccess overflow-x-auto max-h-48">${escapeHtml(jsonExport)}</pre>
+            ` : ""}
+          </section>
+        </div>
+      `;
+    }
+
+    function attachCanvasDragHandlers() {
+      const canvas = document.getElementById("touch-viewport-canvas");
+      if (!canvas) return;
+
+      let draggingId = null;
+
+      function getClientXY(ev) {
+        if (ev.touches && ev.touches.length > 0) {
+          return { clientX: ev.touches[0].clientX, clientY: ev.touches[0].clientY };
+        }
+        return { clientX: ev.clientX, clientY: ev.clientY };
+      }
+
+      function onStart(ev) {
+        const node = ev.target.closest(".touch-control-node");
+        if (!node) return;
+        ev.preventDefault();
+        draggingId = node.getAttribute("data-ctrl-id");
+        state.selectedControlId = draggingId;
+        // Highlight selection without destroying DOM mid-drag
+        canvas.querySelectorAll(".touch-control-node").forEach(el => {
+          const isMatch = el.getAttribute("data-ctrl-id") === draggingId;
+          el.classList.toggle("border-cyanAccent", isMatch);
+          el.classList.toggle("shadow-lg", isMatch);
+        });
+      }
+
+      function onMove(ev) {
+        if (!draggingId) return;
+        ev.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const { clientX, clientY } = getClientXY(ev);
+        let nx = (clientX - rect.left) / rect.width;
+        let ny = (clientY - rect.top) / rect.height;
+        nx = Math.max(0.06, Math.min(0.94, nx));
+        ny = Math.max(0.10, Math.min(0.90, ny));
+
+        if (state.snapToGrid) {
+          nx = Math.round(nx * 32) / 32;
+          ny = Math.round(ny * 18) / 18;
+        }
+
+        const ctrl = state.controls.find(c => c.id === draggingId);
+        if (ctrl) {
+          ctrl.x = nx;
+          ctrl.y = ny;
+          const el = canvas.querySelector(`[data-ctrl-id="${draggingId}"]`);
+          if (el) {
+            el.style.left = `${(nx * 100).toFixed(2)}%`;
+            el.style.top = `${(ny * 100).toFixed(2)}%`;
+          }
+        }
+      }
+
+      function onEnd() {
+        if (draggingId) {
+          draggingId = null;
+          renderActiveScreen();
+        }
+      }
+
+      canvas.addEventListener("mousedown", onStart);
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onEnd);
+
+      canvas.addEventListener("touchstart", onStart, { passive: false });
+      window.addEventListener("touchmove", onMove, { passive: false });
+      window.addEventListener("touchend", onEnd);
+    }
+
+    function addTouchControl(type) {
+      const idx = state.controls.length + 1;
+      const newCtrl = {
+        id: `ctrl-${Date.now()}`,
+        type,
+        label: type === "JOYSTICK" ? `JOY${idx}` : `B${idx}`,
+        x: 0.50,
+        y: 0.50,
+        radius: type === "JOYSTICK" ? 48 : 30,
+        opacity: 0.85,
+        sensitivity: 1.0,
+        deadzone: type === "JOYSTICK" ? 0.12 : 0.0,
+        binding: type === "JOYSTICK" ? "MOUSE_DELTA_XY" : "KEYCODE_ENTER"
+      };
+      state.controls.push(newCtrl);
+      state.selectedControlId = newCtrl.id;
+      renderActiveScreen();
+    }
+
+    function updateSelectedControl(prop, value) {
+      const ctrl = state.controls.find(c => c.id === state.selectedControlId);
+      if (!ctrl) return;
+      ctrl[prop] = value;
+      renderActiveScreen();
+    }
+
+    function deleteSelectedControl() {
+      state.controls = state.controls.filter(c => c.id !== state.selectedControlId);
+      state.selectedControlId = state.controls[0]?.id || null;
+      renderActiveScreen();
+    }
+
+    function toggleTouchGrid() {
+      state.snapToGrid = !state.snapToGrid;
+      renderActiveScreen();
+    }
+
+    function resetTouchPreset() {
+      state.controls = getDefaultControls();
+      state.selectedControlId = state.controls[0].id;
+      renderActiveScreen();
+    }
+
+    function toggleJsonPreview() {
+      state.showJsonPreview = !state.showJsonPreview;
+      renderActiveScreen();
+    }
+
+    function saveTouchLayout() {
+      state.showJsonPreview = true;
+      renderActiveScreen();
+      showToast(state.lang === "id"
+        ? "Tersimpan ke working_copy/assets/pc2android_touch_layout.json!"
+        : "Saved to working_copy/assets/pc2android_touch_layout.json!");
+    }
+
+    // =========================================================================
+    // SCREEN 5: ASISTEN PORTING AI & AUDIT PATCH REVERSIBEL
+    // =========================================================================
+    function renderAiDiffScreen() {
+      return `
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <!-- LEFT: REVERSIBLE PATCH AUDIT LOG -->
+          <section class="lg:col-span-7 bg-panel border border-borderSubtle rounded-xl p-4 space-y-3">
+            <div>
+              <h2 class="font-mono text-xs font-bold text-cyanAccent">${t("ai_title")}</h2>
+              <p class="text-xs text-textSecondary mt-0.5">${t("ai_subtitle")}</p>
+            </div>
+
+            <div class="space-y-3">
+              ${state.patches.map(patch => `
+                <div class="bg-elevated/70 border ${patch.approved ? "border-emeraldSuccess/35" : "border-amberWarning/40"} rounded-xl p-3 space-y-2">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                      <span class="font-mono text-[10px] px-2 py-0.5 rounded ${
+                        patch.action === "CREATED" ? "bg-cyanAccent/15 text-cyanAccent" : "bg-violetInfo/15 text-violetInfo"
+                      }">${patch.action}</span>
+                      <span class="font-mono text-xs font-bold text-textPrimary">${patch.file}</span>
+                    </div>
+
+                    <button onclick="togglePatchApproval('${patch.id}')" class="min-h-[32px] px-3 py-1 rounded-lg font-mono text-xs font-bold transition ${
+                      patch.approved
+                        ? "bg-emeraldSuccess/20 text-emeraldSuccess border border-emeraldSuccess/40 hover:bg-coralError/20 hover:text-coralError hover:border-coralError/40"
+                        : "bg-amberWarning text-obsidian hover:bg-amberWarning/90"
+                    }">
+                      ${patch.approved
+                        ? (state.lang === "id" ? "✓ Diterapkan (Klik Revert)" : "✓ Applied (Click Revert)")
+                        : (state.lang === "id" ? "Setujui Patch" : "Approve Patch")
+                      }
+                    </button>
+                  </div>
+
+                  <p class="text-xs text-textSecondary">${state.lang === "id" ? patch.descId : patch.descEn}</p>
+
+                  <pre class="bg-terminalBg border border-borderSubtle rounded-lg p-2.5 font-mono text-[11px] leading-relaxed overflow-x-auto">${patch.diff.split("\n").map(line => {
+                    const cls = line.startsWith("+") ? "text-emeraldSuccess" : line.startsWith("-") ? "text-coralError" : "text-textSecondary";
+                    return `<span class="${cls}">${escapeHtml(line)}</span>`;
+                  }).join("\n")}</pre>
+                </div>
+              `).join("")}
+            </div>
+          </section>
+
+          <!-- RIGHT: AI PORTING ASSISTANT CHAT -->
+          <section class="lg:col-span-5 bg-panel border border-borderSubtle rounded-xl p-4 flex flex-col justify-between gap-3">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between border-b border-borderSubtle pb-2.5">
+                <span class="font-mono text-xs font-bold text-violetInfo">AI PORTING AGENT</span>
+                <button onclick="openVaultModal()" class="font-mono text-[11px] text-cyanAccent hover:underline">
+                  Keystore API Config
+                </button>
+              </div>
+
+              <!-- Quick Prompt Chips -->
+              <div class="flex flex-wrap gap-1.5">
+                <button onclick="askAiPreset('dx11')" class="px-2.5 py-1.5 rounded-lg bg-elevated border border-borderSubtle hover:border-cyanAccent text-[11px] text-textPrimary transition">
+                  ${state.lang === "id" ? "Jelaskan migrasi DirectX 11 → GLES3" : "Explain DirectX 11 → GLES3"}
+                </button>
+                <button onclick="askAiPreset('nativeactivity')" class="px-2.5 py-1.5 rounded-lg bg-elevated border border-borderSubtle hover:border-cyanAccent text-[11px] text-textPrimary transition">
+                  ${state.lang === "id" ? "Mengapa android:hasCode=\"false\"?" : "Why android:hasCode=\"false\"?"}
+                </button>
+                <button onclick="askAiPreset('exe')" class="px-2.5 py-1.5 rounded-lg bg-elevated border border-borderSubtle hover:border-cyanAccent text-[11px] text-textPrimary transition">
+                  ${state.lang === "id" ? "Mengapa LegacyGame.exe ditolak?" : "Why is LegacyGame.exe blocked?"}
+                </button>
+              </div>
+
+              <!-- Chat Transcript -->
+              <div class="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                ${state.aiMessages.map(msg => `
+                  <div class="p-3 rounded-xl text-xs leading-relaxed ${
+                    msg.role === "user"
+                      ? "bg-cyanAccent/15 border border-cyanAccent/30 text-textPrimary ml-6"
+                      : "bg-elevated border border-borderSubtle text-textSecondary mr-4"
+                  }">
+                    <div class="font-mono text-[10px] font-bold mb-1 ${msg.role === "user" ? "text-cyanAccent" : "text-violetInfo"}">
+                      ${msg.role === "user" ? "DEVELOPER" : "PC2ANDROID AI"}
+                    </div>
+                    <div>${escapeHtml(state.lang === "id" ? msg.textId : msg.textEn)}</div>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+
+            <!-- Custom Prompt Input -->
+            <form onsubmit="submitAiPrompt(event)" class="flex gap-2 pt-2 border-t border-borderSubtle">
+              <input
+                id="ai-prompt-input"
+                type="text"
+                placeholder="${state.lang === "id" ? "Tanyakan error build, CMake, atau shader..." : "Ask about build errors, CMake, or shaders..."}"
+                class="flex-1 min-h-[40px] bg-obsidian border border-borderSubtle focus:border-cyanAccent rounded-lg px-3 text-xs text-textPrimary outline-none"
+              />
+              <button type="submit" class="min-h-[40px] px-3.5 rounded-lg bg-cyanAccent text-obsidian font-bold text-xs hover:bg-cyanAccent/90 transition">
+                ${state.lang === "id" ? "Kirim" : "Send"}
+              </button>
+            </form>
+          </section>
+        </div>
+      `;
+    }
+
+    function togglePatchApproval(patchId) {
+      const patch = state.patches.find(p => p.id === patchId);
+      if (!patch) return;
+      patch.approved = !patch.approved;
+      renderActiveScreen();
+      showToast(patch.approved
+        ? (state.lang === "id" ? `Patch ${patch.file} diterapkan ke salinan kerja.` : `Patch ${patch.file} applied to working copy.`)
+        : (state.lang === "id" ? `Patch ${patch.file} dikembalikan (Reverted).` : `Patch ${patch.file} reverted.`));
+    }
+
+    function askAiPreset(topic) {
+      const responses = {
+        dx11: {
+          qId: "Bagaimana cara memigrasikan DirectXShooter ke OpenGL ES 3.0?",
+          qEn: "How do I migrate DirectXShooter to OpenGL ES 3.0?",
+          aId: "1) Ganti WinMain/HWND dengan ANativeActivity_onCreate dan eglCreateWindowSurface. 2) Terjemahkan shader HLSL SM 5.0 ke GLSL ES 3.00 (#version 300 es). 3) Setujui patch 'src/RendererGLES3.cpp' di panel kiri lalu buka Pusat Build untuk mengompilasi biner ARM64.",
+          aEn: "1) Replace WinMain/HWND with ANativeActivity_onCreate and eglCreateWindowSurface. 2) Translate HLSL SM 5.0 shaders to GLSL ES 3.00 (#version 300 es). 3) Approve the 'src/RendererGLES3.cpp' patch on the left and open Build Center to compile the ARM64 binary."
+        },
+        nativeactivity: {
+          qId: "Mengapa AndroidManifest.xml menggunakan android:hasCode=\"false\"?",
+          qEn: "Why does AndroidManifest.xml use android:hasCode=\"false\"?",
+          aId: "Karena android.app.NativeActivity sudah tersedia di dalam Android OS framework. Dengan android:hasCode=\"false\", game C/C++ Anda yang dikompilasi ke lib/arm64-v8a/libpc2android_game.so berjalan langsung di ART/Bionic tanpa memerlukan compiler javac atau d8 di ponsel.",
+          aEn: "Because android.app.NativeActivity already resides inside the Android OS framework. Setting android:hasCode=\"false\" lets your C/C++ game compiled into lib/arm64-v8a/libpc2android_game.so execute directly on ART/Bionic without needing javac or d8 on the phone."
+        },
+        exe: {
+          qId: "Mengapa LegacyGame.exe tidak bisa di-build menjadi APK?",
+          qEn: "Why can't LegacyGame.exe be built into an APK?",
+          aId: "LegacyGame.exe adalah biner mesin Windows x86_64 (PE32+ 0x8664) tanpa kode sumber. PC2ANDROID melarang keras emulasi Windows/Wine/Box64 dan hanya membangun aplikasi Android ARM64 native dari proyek sumber yang sah.",
+          aEn: "LegacyGame.exe is a compiled Windows x86_64 machine binary (PE32+ 0x8664) without source code. PC2ANDROID strictly prohibits Windows/Wine/Box64 emulation and only builds native ARM64 Android apps from authorized source projects."
+        }
+      };
+
+      const item = responses[topic];
+      if (!item) return;
+      state.aiMessages.push({ role: "user", textId: item.qId, textEn: item.qEn });
+      state.aiMessages.push({ role: "assistant", textId: item.aId, textEn: item.aEn });
+      renderActiveScreen();
+    }
+
+    function submitAiPrompt(ev) {
+      ev.preventDefault();
+      const input = document.getElementById("ai-prompt-input");
+      const text = (input?.value || "").trim();
+      if (!text) return;
+
+      const p = getSelectedProject();
+      state.aiMessages.push({ role: "user", textId: text, textEn: text });
+      state.aiMessages.push({
+        role: "assistant",
+        textId: `Analisis konteks untuk ${p.name} (${p.engineLabel}): Pastikan target ABI diatur ke arm64-v8a, kompresi tekstur menggunakan ETC2/ASTC, dan tidak ada panggilan API desktop yang tersisa sebelum menekan Build APK ARM64.`,
+        textEn: `Context analysis for ${p.name} (${p.engineLabel}): Verify target ABI is set to arm64-v8a, textures use ETC2/ASTC compression, and no desktop-only API calls remain before running Build ARM64 APK.`
+      });
+      renderActiveScreen();
+    }
+
+    // =========================================================================
+    // 6. MODALS (ZIP SECURITY GUARD, APK INSPECTOR, KEYSTORE VAULT)
+    // =========================================================================
+    function openModal(title, bodyHtml, footerHtml) {
+      document.getElementById("modal-title").textContent = title;
+      document.getElementById("modal-body").innerHTML = bodyHtml;
+      document.getElementById("modal-footer").innerHTML = footerHtml;
+      document.getElementById("custom-modal-backdrop").classList.remove("hidden");
+    }
+
+    function closeModal() {
+      document.getElementById("custom-modal-backdrop").classList.add("hidden");
+    }
+
+    function openZipSecurityModal() {
+      openModal(
+        "SafeArchiveExtractor — Security Audit",
+        `
+          <div class="space-y-2.5 font-mono text-xs">
+            <div class="p-2.5 rounded-lg bg-coralError/10 border border-coralError/30 text-coralError">
+              [BLOCKED] Entry "../../system/build.prop" → SecurityViolationException: Zip Slip path traversal diblokir!
+            </div>
+            <div class="p-2.5 rounded-lg bg-coralError/10 border border-coralError/30 text-coralError">
+              [BLOCKED] Entry "assets/bomb.dat" (ratio 420.5x > 100.0x) → Decompression bomb diblokir!
+            </div>
+            <div class="p-2.5 rounded-lg bg-emeraldSuccess/10 border border-emeraldSuccess/30 text-emeraldSuccess">
+              [VERIFIED] Workspace terisolasi di app-private filesDir; snapshot asli dikunci setReadOnly().
+            </div>
+          </div>
+        `,
+        `<button onclick="closeModal()" class="px-4 py-2 rounded-lg bg-cyanAccent text-obsidian font-bold text-xs">Tutup</button>`
+      );
+    }
+
+    function openApkInspectorModal() {
+      const p = getSelectedProject();
+      openModal(
+        `APK Inspector — ${p.name}-arm64.apk`,
+        `
+          <div class="space-y-2 font-mono text-xs">
+            <div class="flex justify-between py-1 border-b border-borderSubtle"><span class="text-textMuted">Package ID:</span><span class="text-textPrimary">${p.packageId}</span></div>
+            <div class="flex justify-between py-1 border-b border-borderSubtle"><span class="text-textMuted">Native ABI:</span><span class="text-emeraldSuccess">arm64-v8a (EM_AARCH64 0x00B7)</span></div>
+            <div class="flex justify-between py-1 border-b border-borderSubtle"><span class="text-textMuted">Native Lib:</span><span class="text-textPrimary">${p.elfLibs[0] || "lib/arm64-v8a/libpc2android_game.so"}</span></div>
+            <div class="flex justify-between py-1 border-b border-borderSubtle"><span class="text-textMuted">APK Signature:</span><span class="text-emeraldSuccess">Scheme v1 + v2 + v3 VALID</span></div>
+            <div class="flex justify-between py-1"><span class="text-textMuted">Output Path:</span><span class="text-cyanAccent">/data/user/0/com.pc2android.studio/files/builds/</span></div>
+          </div>
+        `,
+        `
+          <button onclick="closeModal()" class="px-4 py-2 rounded-lg bg-elevated text-textSecondary text-xs font-semibold">Tutup</button>
+          <button onclick="closeModal(); showToast('PackageInstaller intent siap untuk ${p.name}-arm64.apk');" class="px-4 py-2 rounded-lg bg-emeraldSuccess text-obsidian font-bold text-xs">Kirim ke Android PackageInstaller</button>
+        `
+      );
+    }
+
+    function openVaultModal() {
+      openModal(
+        "Android Keystore AI Credential Vault",
+        `
+          <p class="text-xs text-textSecondary">Kredensial API AI dienkripsi menggunakan <strong>EncryptedSharedPreferences (AES256-GCM)</strong> yang didukung hardware Android Keystore dan tidak pernah disimpan dalam kode sumber.</p>
+          <div class="space-y-2 pt-1">
+            <label class="block text-xs font-mono text-textSecondary">Endpoint URL
+              <input type="text" value="https://api.openai.com/v1/chat/completions" class="mt-1 w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-xs text-textPrimary font-mono" />
+            </label>
+            <label class="block text-xs font-mono text-textSecondary">API Key (AES256-GCM Encrypted)
+              <input type="password" value="sk-pc2android-keystore-protected" class="mt-1 w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-xs text-textPrimary font-mono" />
+            </label>
+          </div>
+        `,
+        `
+          <button onclick="closeModal()" class="px-4 py-2 rounded-lg bg-elevated text-textSecondary text-xs font-semibold">Batal</button>
+          <button onclick="closeModal(); showToast('Kredensial disimpan aman di Android Keystore!');" class="px-4 py-2 rounded-lg bg-cyanAccent text-obsidian font-bold text-xs">Simpan ke Keystore</button>
+        `
+      );
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    // Initialize studio UI on load
+    window.addEventListener("DOMContentLoaded", () => {
+      renderNav();
+      renderActiveScreen();
+    });
+  </script>
+</body>
+</html>
+```
