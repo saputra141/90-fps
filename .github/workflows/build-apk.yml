@@ -52,7 +52,9 @@ jobs:
 
       - name: Install Android build packages
         run: |
-          set -euo pipefail
+          set -eu
+          # sdkmanager may close the license input early; do not let yes(1)'s
+          # expected SIGPIPE abort the workflow.
           yes | sdkmanager --licenses
           sdkmanager --install \
             "platform-tools" \
