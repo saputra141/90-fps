@@ -111,8 +111,7 @@ jobs:
                   pickFirst 'lib/arm64-v8a/libfluidsynth-assetloader.so'
                   pickFirst 'lib/arm64-v8a/libfluidsynth.so'
                   pickFirst 'lib/arm64-v8a/libgio-2.0.so'
-                  # Resolve any additional duplicate native .so files exposed
-                  # by both jniLibs and CMake IMPORTED targets.
+                  // Resolve additional duplicate native .so files exposed by jniLibs and CMake IMPORTED targets.
                   pickFirst '**/*.so'
               }
 
