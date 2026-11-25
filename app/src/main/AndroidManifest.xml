@@ -1,35 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
     <uses-permission android:name="android.permission.INTERNET" />
-
-    <uses-feature
-        android:name="android.hardware.vulkan.version"
-        android:required="false"
-        android:version="0x00401000" />
-
-    <application
-        android:allowBackup="false"
-        android:hardwareAccelerated="true"
-        android:label="S22 WinEmu"
-        android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.NoActionBar">
-
-        <activity
-            android:name="com.s22winemu.app.ui.DisplayActivity"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:exported="false"
-            android:screenOrientation="sensorLandscape" />
-
-        <activity
-            android:name="com.s22winemu.app.MainActivity"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:exported="true"
-            android:screenOrientation="portrait">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+    <uses-feature android:name="android.hardware.vulkan.version" android:required="false" android:version="0x00401000" />
+    <application android:allowBackup="false" android:hardwareAccelerated="true" android:label="90-FPS" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:supportsRtl="true" android:theme="@android:style/Theme.Material.NoActionBar">
+        <activity android:name="com.s22winemu.app.ui.DisplayActivity" android:configChanges="orientation|screenSize|keyboardHidden" android:exported="false" android:screenOrientation="sensorLandscape" />
+        <activity android:name="com.s22winemu.app.MainActivity" android:configChanges="orientation|screenSize|keyboardHidden" android:exported="true" android:screenOrientation="portrait">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>
     </application>
 </manifest>
