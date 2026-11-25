@@ -57,7 +57,7 @@ fun RuntimeManagerScreen(
                     Text(backend.subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(backend.description, fontSize = 12.sp)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        AssistChip(onClick = {}, label = { Text(backend.status) })
+                        Text(backend.status, color = S22Amber, fontSize = 11.sp)
                         Button(
                             onClick = { onBackendSelected(backend) },
                             colors = ButtonDefaults.buttonColors(containerColor = if (selected) S22Emerald else S22Cyan, contentColor = Color.Black)
