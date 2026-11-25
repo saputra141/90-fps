@@ -43,7 +43,11 @@ import com.s22winemu.app.core.S22HardwareOptimizer
 import com.s22winemu.app.data.DriverRepository
 import com.s22winemu.app.model.*
 import com.s22winemu.app.ui.theme.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
+import java.io.File
+import java.io.FileOutputStream
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -115,12 +119,30 @@ fun S22WinEmuApp(repository: DriverRepository) {
 
     val exePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) {
-            val fileName = context.contentResolver.query(uri, null, null, null, null)?.use { c ->
-                val idx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                if (c.moveToFirst() && idx >= 0) c.getString(idx) else null
-            } ?: "game.exe"
-            container = container.copy(executablePath = "Z:\\sdcard\\Download\\$fileName")
-            Toast.makeText(context, "Target EXE: $fileName", Toast.LENGTH_SHORT).show()
+            scope.launch {
+                runCatching {
+                    val fileName = context.contentResolver.query(uri, null, null, null, null)?.use { c ->
+                        val idx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (c.moveToFirst() && idx >= 0) c.getString(idx) else null
+                    } ?: "game.exe"
+                    require(fileName.endsWith(".exe", ignoreCase = true)) {
+                        "Pilih file Windows dengan ekstensi .exe."
+                    }
+                    val safeName = fileName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
+                    val importedDir = File(context.filesDir, "imported_exe").apply { mkdirs() }
+                    val destination = File(importedDir, safeName)
+                    withContext(Dispatchers.IO) {
+                        context.contentResolver.openInputStream(uri)?.use { input ->
+                            FileOutputStream(destination).use { output -> input.copyTo(output) }
+                        } ?: error("File tidak bisa dibaca dari penyimpanan.")
+                    }
+                    val winePath = "Z:\\data\\user\\0\\${context.packageName}\\files\\imported_exe\\$safeName"
+                    container = container.copy(executablePath = winePath)
+                    Toast.makeText(context, "EXE disalin ke penyimpanan aplikasi: $safeName", Toast.LENGTH_LONG).show()
+                }.onFailure {
+                    Toast.makeText(context, "Gagal mengimpor EXE: ${it.localizedMessage}", Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 
