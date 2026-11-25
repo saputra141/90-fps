@@ -74,6 +74,21 @@ jobs:
           test -f upstream/app/app/src/main/assets/graphics_driver/turnip-26.1.0.tzst
           echo "Pinned Winlator engine and bundled runtime assets verified."
 
+      - name: Bundle official Wine Gecko and Mono installers
+        run: |
+          set -euo pipefail
+          ASSETS="upstream/app/app/src/main/assets/wine_addons"
+          mkdir -p "$ASSETS"
+          BASE="https://raw.githubusercontent.com/brunodev85/winlator/v11.2.0/wine_addons"
+          curl -fL --retry 3 "$BASE/wine-gecko-2.47.4-x86.msi" -o "$ASSETS/wine-gecko-2.47.4-x86.msi"
+          curl -fL --retry 3 "$BASE/wine-gecko-2.47.4-x86_64.msi" -o "$ASSETS/wine-gecko-2.47.4-x86_64.msi"
+          curl -fL --retry 3 "$BASE/wine-mono-10.1.0-x86.msi" -o "$ASSETS/wine-mono-10.1.0-x86.msi"
+          curl -fL --retry 3 "$BASE/wine-mono-9.0.0-x86.msi" -o "$ASSETS/wine-mono-9.0.0-x86.msi"
+          for file in "$ASSETS"/*.msi; do
+            test -s "$file"
+            file "$file"
+          done
+
       - name: Rebrand package as 90-FPS
         env:
           BUILD_NUMBER: ${{ github.run_number }}
@@ -94,6 +109,7 @@ jobs:
           packaging = """    packagingOptions {
                   pickFirst 'lib/arm64-v8a/libFLAC.so'
                   pickFirst 'lib/arm64-v8a/libfluidsynth-assetloader.so'
+                  pickFirst 'lib/arm64-v8a/libfluidsynth.so'
               }
 
           """
