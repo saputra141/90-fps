@@ -1,11 +1,16 @@
 cmake_minimum_required(VERSION 3.22.1)
-project("s22winemu")
+project("ultraemulator")
 
-add_library(s22winemu SHARED
-        s22_winemu_jni.cpp)
+add_library(ultraemulator SHARED
+    native-lib.cpp
+    gb_core.cpp
+)
 
 find_library(log-lib log)
+find_library(jnigraphics jnigraphics)
 
-target_link_libraries(s22winemu
-        ${log-lib}
-        dl)
+target_link_libraries(ultraemulator
+    ${log-lib}
+    ${jnigraphics}
+    android
+)
