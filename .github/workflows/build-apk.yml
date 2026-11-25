@@ -1,107 +1,161 @@
-name: Build S22 WinEmu APK
+name: Build 90-FPS Complete Windows Runtime
 
 on:
   push:
-    branches:
-      - main
-      - master
-
+    branches: [main, master]
   pull_request:
-    branches:
-      - main
-      - master
-
+    branches: [main, master]
   workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: 90fps-complete-runtime-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
-    name: Build S22 WinEmu
-    runs-on: ubuntu-latest
+    name: Build 90-FPS (Winlator engine + bundled runtime)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout 90-FPS
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
         with:
-          java-version: '17'
           distribution: temurin
-          cache: gradle
+          java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
-        with:
-          packages: 'platform-tools'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK Components
+      - name: Install Android build tools
         run: |
-          set -e
           yes | sdkmanager --licenses
           sdkmanager \
             "platform-tools" \
-            "platforms;android-34" \
-            "build-tools;34.0.0" \
-            "ndk;26.3.11579264" \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "ndk;24.0.8215888" \
             "cmake;3.22.1"
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.7'
-
-      - name: Verify Build Environment
+      - name: Fetch Winlator engine and all pinned submodules
         run: |
-          java -version
-          sdkmanager --list_installed
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "NDK Version: 26.3.11579264"
+          git clone --depth 1 --branch v11.2.0 --recurse-submodules \
+            https://github.com/brunodev85/winlator.git upstream
+          test -f upstream/app/gradlew
+          test -f upstream/app/app/src/main/assets/rootfs.tzst
+          test -f upstream/app/app/src/main/assets/box64/box64-0.4.4.tzst
+          test -f upstream/app/app/src/main/assets/dxwrapper/dxvk-2.4.1.tzst
+          test -f upstream/app/app/src/main/assets/graphics_driver/turnip-26.2.0.tzst
+          echo "Pinned Winlator engine and bundled runtime assets verified."
 
-      - name: Build Debug APK
-        run: gradle assembleDebug --stacktrace
-
-      - name: Verify APK Output
+      - name: Rebrand package as 90-FPS
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
         run: |
-          APK_DIR="app/build/outputs/apk/debug"
-          if [ ! -d "$APK_DIR" ]; then
-            echo "ERROR: APK output directory not found!"
-            exit 1
-          fi
-          APK_COUNT=$(find "$APK_DIR" -name "*.apk" | wc -l)
-          if [ "$APK_COUNT" -eq 0 ]; then
-            echo "ERROR: No APK generated!"
-            exit 1
-          fi
-          echo "APK successfully generated:"
-          find "$APK_DIR" -name "*.apk"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
 
-      - name: Prepare Release APK
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+          root = Path("upstream/app")
+          gradle = root / "app/build.gradle"
+          text = gradle.read_text()
+          text = text.replace("applicationId 'com.winlator'", "applicationId 'com.s22winemu.app'")
+          text = text.replace("versionCode 33", f"versionCode {int(os.environ['BUILD_NUMBER'])}")
+          text = text.replace('versionName "11.2"', f'versionName "0.2.{os.environ["BUILD_NUMBER"]}"')
+          if "applicationId 'com.s22winemu.app'" not in text:
+              raise SystemExit("Could not safely rebrand Android applicationId")
+          gradle.write_text(text)
+
+          strings = root / "app/src/main/res/values/strings.xml"
+          text = strings.read_text()
+          text = text.replace('<string name="app_name">Winlator</string>',
+                              '<string name="app_name">90-FPS</string>', 1)
+          strings.write_text(text)
+
+          manifest = root / "app/src/main/AndroidManifest.xml"
+          text = manifest.read_text().replace(
+              "com.winlator.FileProvider", "com.s22winemu.app.FileProvider"
+          )
+          manifest.write_text(text)
+
+          assets = root / "app/src/main/assets/THIRD_PARTY_NOTICES"
+          assets.mkdir(parents=True, exist_ok=True)
+          (assets / "WINLATOR-LICENSE-LGPL-2.1.txt").write_text(
+              Path("upstream/LICENSE").read_text()
+          )
+          app_license = Path("upstream/app/LICENSE")
+          if app_license.exists():
+              (assets / "WINLATOR-APP-LICENSE-LGPL-2.1.txt").write_text(
+                  app_license.read_text()
+              )
+          (assets / "NOTICE.txt").write_text(
+              "90-FPS includes the Winlator Android application engine from "
+              "https://github.com/brunodev85/winlator (v11.2.0) and its pinned "
+              "source submodules. Winlator is distributed under LGPL-2.1. "
+              "Third-party components retain their respective upstream licenses. "
+              "See the accompanying source archive and upstream repositories "
+              "for complete notices and source code. 90-FPS is an independent "
+              "rebranded build and is not an official Winlator release.\n"
+          )
+          PY
+
+      - name: Build complete ARM64 APK
+        working-directory: upstream/app
         run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Verify APK and bundled runtime
+        run: |
+          set -e
+          APK="upstream/app/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
           mkdir -p release
-          cp app/build/outputs/apk/debug/*.apk "release/S22-WinEmu-v0.1.${GITHUB_RUN_NUMBER}-arm64-debug.apk"
+          cp "$APK" "release/90-FPS-v0.2.${GITHUB_RUN_NUMBER}-arm64.apk"
+          ls -lh release/*.apk
+          unzip -l "$APK" | grep -E 'assets/(rootfs|box64|dxwrapper|graphics_driver)' | head -40
+          unzip -l "$APK" | grep -q 'assets/rootfs.tzst'
+          unzip -l "$APK" | grep -q 'assets/box64/box64-0.4.4.tzst'
+          unzip -l "$APK" | grep -q 'assets/dxwrapper/dxvk-2.4.1.tzst'
+          unzip -l "$APK" | grep -q 'assets/graphics_driver/turnip-26.2.0.tzst'
 
-      - name: Upload S22 WinEmu APK
+      - name: Package corresponding upstream source and submodules
+        run: |
+          tar -czf "release/90-FPS-source-Winlator-v11.2.0.tar.gz" \
+            --exclude='.git' upstream
+          ls -lh release/
+
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: S22WinEmu-SD8Gen1-APK
-          path: app/build/outputs/apk/debug/*.apk
+          name: 90-FPS-Complete-ARM64
+          path: release/*
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
 
-      - name: Publish GitHub Pre-release
+      - name: Publish 90-FPS complete runtime release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.${{ github.run_number }}
-          name: S22 WinEmu v0.1.${{ github.run_number }}
+          tag_name: v0.2.${{ github.run_number }}
+          name: 90-FPS v0.2.${{ github.run_number }} - Complete Runtime
           body: |
-            S22 WinEmu early preview for Samsung Galaxy S22 Ultra Snapdragon 8 Gen 1 (ARM64).
+            90-FPS ARM64 build using the Winlator v11.2.0 engine and pinned source submodules.
 
-            **Important:** This is an early debug preview. A successful APK build does not mean all Windows applications or PC games are supported. Wine/Box64 runtime and game compatibility remain under development.
-          files: release/*.apk
+            Bundled assets are verified in the APK: Ubuntu RootFS, Box64, Wine runtime assets,
+            Turnip graphics driver, DXVK, VKD3D, D8VK and supporting components.
+
+            First launch installs the bundled system files into app storage. Allow the initial
+            installation to finish and keep sufficient free storage available.
+
+            This is an independent rebranded build, not an official Winlator release.
+            The corresponding upstream source and submodules are attached for license compliance.
+          files: release/*
           draft: false
           prerelease: true
