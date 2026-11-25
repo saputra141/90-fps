@@ -1,0 +1,2 @@
+-keep class com.s22winemu.app.core.NativeBridge { *; }
+-keep class com.s22winemu.app.core.HardwareTelemetry { *; }
