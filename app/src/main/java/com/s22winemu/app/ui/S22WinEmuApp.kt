@@ -53,6 +53,7 @@ fun S22WinEmuApp(repository: DriverRepository) {
     val scope = rememberCoroutineScope()
 
     var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedBackend by remember { mutableStateOf(RuntimeBackend.WINE_BOX64) }
     val drivers by repository.drivers.collectAsState()
     val downloadState by repository.downloadState.collectAsState()
 
@@ -177,6 +178,12 @@ fun S22WinEmuApp(repository: DriverRepository) {
                     icon = { Icon(Icons.Default.Public, contentDescription = null) },
                     label = { Text("Google", fontSize = 11.sp) }
                 )
+                NavigationBarItem(
+                    selected = selectedTab == 4,
+                    onClick = { selectedTab = 4 },
+                    icon = { Icon(Icons.Default.Build, contentDescription = null) },
+                    label = { Text("Runtime", fontSize = 11.sp) }
+                )
             }
         }
     ) { padding ->
@@ -221,7 +228,8 @@ fun S22WinEmuApp(repository: DriverRepository) {
                             selectedDxvk = dxvk,
                             selectedBox64 = box64,
                             driverRootPath = repository.driversDir.absolutePath,
-                            winePrefixPath = repository.winePrefixDir.absolutePath
+                            winePrefixPath = repository.winePrefixDir.absolutePath,
+                            runtimeBackend = selectedBackend
                         )
 
                         val intent = Intent(context, DisplayActivity::class.java).apply {
@@ -232,6 +240,7 @@ fun S22WinEmuApp(repository: DriverRepository) {
                             putExtra("turnip_name", turnip?.name ?: "Mesa Turnip Adreno 730")
                             putExtra("dxvk_name", dxvk?.name ?: "DXVK 2.4.1")
                             putExtra("profile_title", container.profile.title)
+                            putExtra("runtime_backend", selectedBackend.name)
                             putExtra("cpu_mask", container.profile.cpuAffinityMask)
                             putStringArrayListExtra(
                                 "env_pairs",
@@ -284,6 +293,11 @@ fun S22WinEmuApp(repository: DriverRepository) {
                             Toast.LENGTH_SHORT
                         ).show()
                     }
+                )
+
+                4 -> RuntimeManagerScreen(
+                    selectedBackend = selectedBackend,
+                    onBackendSelected = { selectedBackend = it }
                 )
 
                 3 -> GoogleDriverBrowserScreen(
