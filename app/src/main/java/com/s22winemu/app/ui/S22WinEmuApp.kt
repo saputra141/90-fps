@@ -131,12 +131,14 @@ fun S22WinEmuApp(repository: DriverRepository) {
                 title = {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                "S22 WinEmu",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
-                                color = S22Cyan
-                            )
+                            Box(
+                                modifier = Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(Brush.linearGradient(listOf(S22Cyan, S22Violet))),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Speed, contentDescription = "90-FPS", tint = Color.Black)
+                            }
+                            Spacer(Modifier.width(9.dp))
+                            Text("90-FPS", fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = S22Cyan)
                             Spacer(Modifier.width(8.dp))
                             BadgeChip(
                                 text = if (telemetry.isAdreno730Detected) "Adreno 730 OK" else "SD8G1 Mode",
@@ -183,6 +185,12 @@ fun S22WinEmuApp(repository: DriverRepository) {
                     onClick = { selectedTab = 4 },
                     icon = { Icon(Icons.Default.Build, contentDescription = null) },
                     label = { Text("Runtime", fontSize = 11.sp) }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 5,
+                    onClick = { selectedTab = 5 },
+                    icon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) },
+                    label = { Text("Scaling", fontSize = 10.sp) }
                 )
             }
         }
@@ -299,6 +307,8 @@ fun S22WinEmuApp(repository: DriverRepository) {
                     selectedBackend = selectedBackend,
                     onBackendSelected = { selectedBackend = it }
                 )
+
+                5 -> ScalingLabScreen()
 
                 3 -> GoogleDriverBrowserScreen(
                     initialUrl = googleBrowserUrl,
