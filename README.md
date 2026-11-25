@@ -1,47 +1,62 @@
-# 90-FPS — S22 WinEmu
+# 90-FPS — Complete Windows Runtime for Android
 
-Aplikasi Android eksperimental yang ditargetkan khusus untuk **Samsung Galaxy S22 Ultra Snapdragon 8 Gen 1 (SM8450 / Adreno 730)**.
+90-FPS is an independent ARM64 rebranded build based on the **Winlator v11.2.0** Android engine. It targets Android devices with Vulkan-capable GPUs, with the primary test target being Samsung Galaxy S22 Ultra Snapdragon 8 Gen 1 / Adreno 730.
 
-## Target perangkat
+> 90-FPS is not an official Winlator release. Winlator and its contributors retain their original copyrights and licenses.
 
-- ABI: ARM64 (arm64-v8a)
-- SoC: Qualcomm Snapdragon 8 Gen 1
-- GPU: Adreno 730
-- Android minimum: Android 8.0 (API 26)
-- UI: Kotlin + Jetpack Compose
-- Native layer: C++17 + Android NDK + JNI + Vulkan
+## What is included in the APK
 
-## Branding dan tampilan\n\n- Nama aplikasi: **90-FPS** dengan ikon launcher neon khusus dan adaptive icon Android.\n- Dashboard gelap bergaya gaming dengan aksen cyan/ungu, indikator perangkat, serta tab Runtime dan Scaling Lab.\n\n## Fitur aplikasi saat ini
+The GitHub Actions build fetches the pinned Winlator v11.2.0 source and all of its pinned submodules, then builds one ARM64 APK containing the runtime assets:
 
-- Dashboard perangkat dan informasi GPU/Vulkan.
-- Katalog driver dan impor paket driver dari penyimpanan.
-- Profil resolusi dan optimasi yang ditujukan untuk layar S22 Ultra.
-- Antarmuka desktop, log, dan kontrol sentuh virtual.
-- Kerangka JNI untuk pemeriksaan hardware dan menjalankan binary runtime ARM64.
+- Ubuntu-based RootFS and Wine environment
+- Box64 ARM64 translation runtime
+- Mesa Turnip and supporting graphics drivers
+- DXVK for Direct3D 9/10/11
+- VKD3D for Direct3D 12
+- D8VK and legacy DirectDraw/Direct3D compatibility components
+- PulseAudio and supporting audio assets
+- Container templates, input controls, and supporting Windows components
 
-## Runtime Windows dan backend
+The workflow checks that key runtime archives are actually present inside the APK before publishing it. This avoids producing another UI-only shell that merely lists drivers without having the runtime.
 
-Menu **Runtime** menyediakan pilihan konfigurasi Wine + Box64, Proton (Experimental), Wine ARM64, dan Box64 + Wine. Pilihan backend diteruskan sebagai environment variable saat membuka desktop container. Ini adalah pemilihan konfigurasi, bukan klaim bahwa binary Proton/Wine sudah terpasang.
+## First launch
 
-**Proton di Android:** Proton upstream ditujukan untuk Linux/Steam. Android memerlukan build/port yang kompatibel, integrasi ARM64/Box64, root filesystem, serta graphics stack yang sesuai. Karena itu Proton ditandai Experimental dan tidak otomatis diunduh atau dijalankan sebagai Proton desktop biasa.
+1. Install the 90-FPS ARM64 APK.
+2. Open the app and allow the initial system-file installation to finish.
+3. Keep the device powered and do not force-stop the app while RootFS is being extracted.
+4. Keep several GB of free internal storage available for the installed RootFS, Wine prefixes, containers, and Windows applications.
+5. Create a container, then select or import the Windows `.exe` you want to run.
 
-## Scaling Lab: upscaling dan frame generation\n\nTab **Scaling** menjelaskan jalur peningkatan kualitas/performa grafis. Render resolution scaling melalui preset resolusi yang sudah ada dapat mengurangi beban GPU, tetapi bukan AI upscaling. **Lossless Scaling Frame Generation (LSFG) belum terintegrasi**: aplikasi PC Lossless Scaling tidak dapat langsung dipakai sebagai library Android. Implementasi Android memerlukan capture frame, motion estimation/interpolation, Vulkan compute shader, dan frame pacing. UI menandai fitur ini sebagai belum tersedia agar tidak memberi kesan FPS sudah meningkat.\n\n## C/C++ native toolchain
+The large runtime archives are bundled in the APK. The initial RootFS setup extracts the included system files into app storage; it is not necessary to download Box64, DXVK, or Turnip one by one.
 
-Build APK memakai Android NDK 26.3.11579264 dan CMake 3.22.1 melalui GitHub Actions. NDK menyediakan Clang/LLVM, linker, ARM64 sysroot, libc++, JNI headers, dan LLDB tooling; CMake mengatur build native. CMakeLists mengompilasi kode C++17 untuk ABI `arm64-v8a`. Komponen ini adalah toolchain build untuk APK, bukan IDE/compiler C++ lengkap yang otomatis terinstal di ponsel.
+## Device and compatibility notes
 
-## Status penting: runtime Windows
+- Build ABI: `arm64-v8a`
+- Primary target: Snapdragon 8 Gen 1 / Adreno 730
+- Android minimum: inherited from the upstream Winlator engine (Android 8.0 / API 26)
+- Vulkan support is required for Turnip/DXVK paths.
+- Not every Windows application or PC game is guaranteed to work. Compatibility depends on the app/game, Windows APIs, graphics backend, memory use, driver version, and device temperature.
+- Proton is not treated as a drop-in replacement for Wine. Proton-on-Android requires a compatible port and additional integration; the bundled Winlator engine uses its supported Wine/Box64 stack.
 
-APK Android ini **belum menyertakan distribusi Wine, Box64, root filesystem Windows compatibility, Mesa Turnip, DXVK, atau VKD3D-Proton yang siap pakai**. UI desktop dan katalog driver bukan berarti game Windows sudah bisa dijalankan.
+## Build and releases
 
-Untuk menjalankan program Windows x86/x64 secara lokal, aplikasi masih membutuhkan paket runtime ARM64 yang kompatibel, integrasi loader/Box64 dan Wine yang benar, root filesystem/prefix, serta lapisan grafis yang cocok dengan Adreno 730. Game berat juga tidak dijamin berjalan lancar pada Snapdragon 8 Gen 1; kompatibilitas dan performa bergantung pada game, API grafis, RAM, driver, dan suhu perangkat.
+Push to `main` or run the **Build 90-FPS Complete Windows Runtime** workflow from GitHub Actions.
 
-Gunakan hanya file runtime dan game yang kamu miliki hak untuk menggunakannya. Jangan menganggap semua driver ZIP dapat langsung dipakai sebagai Vulkan driver Android.
+The workflow:
+1. Checks out Winlator v11.2.0 with its pinned submodules.
+2. Rebrands the Android package to `com.s22winemu.app` and the launcher label to 90-FPS.
+3. Builds the ARM64 APK with the upstream native runtime and bundled assets.
+4. Verifies RootFS, Box64, DXVK, and Turnip archives are present in the APK.
+5. Publishes the APK and a corresponding upstream source archive as a GitHub pre-release.
 
-## Build APK via GitHub Actions
+## Open-source notices
 
-1. Buka tab Actions di repository.
-2. Jalankan workflow Build S22 WinEmu APK atau push commit ke branch main.
-3. Jika workflow sukses, unduh artifact S22WinEmu-SD8Gen1-APK.
-4. Instal APK debug di Galaxy S22 Ultra.
+The Winlator Android engine is licensed under LGPL-2.1. The release includes the corresponding source archive and license notices. Third-party components (Wine, Box64, Mesa/Turnip, DXVK, VKD3D, D8VK, PRoot, and others) retain their respective upstream licenses and copyrights. See the attached source archive and the upstream project for complete notices:
 
-Build workflow mengompilasi target native ARM64. Build berhasil hanya membuktikan APK berhasil dibuat; bukan bukti bahwa runtime Windows/game sudah terintegrasi.
+- [Winlator upstream](https://github.com/brunodev85/winlator)
+- [Winlator Android application source](https://github.com/brunodev85/winlator-app)
+- [Winlator license](https://github.com/brunodev85/winlator/blob/main/LICENSE)
+
+## Important
+
+A successful GitHub Actions build confirms that the APK was built and that required runtime archives were bundled. It does not prove that every EXE or game works on every device. Test compatibility with the actual application and device.
