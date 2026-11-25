@@ -12,7 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         engine.initCore()
-        
+
         // Mock ROM loading
         engine.loadROM(ByteArray(0x8000))
 
@@ -45,7 +45,7 @@ fun EmulatorScreen(engine: EmulatorEngine, bitmap: Bitmap) {
         while (isActive) {
             engine.renderFrame(bitmap)
             frameTick++
-            delay(16) // ~60 FPS
+            delay(16)
         }
     }
 
