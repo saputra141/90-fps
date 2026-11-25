@@ -86,8 +86,16 @@ jobs:
           gradle = root / "app/build.gradle"
           text = gradle.read_text()
           text = text.replace("applicationId 'com.winlator'", "applicationId 'com.s22winemu.app'")
-          text = text.replace("versionCode 33", f"versionCode {int(os.environ['BUILD_NUMBER'])}")
-          text = text.replace('versionName "11.2"', f'versionName "0.2.{os.environ["BUILD_NUMBER"]}"')
+          text = text.replace("versionCode 28", f"versionCode {int(os.environ['BUILD_NUMBER'])}")
+          text = text.replace('versionName "11.1"', f'versionName "0.2.{os.environ["BUILD_NUMBER"]}"')
+          # CMake imports libFLAC from jniLibs and Gradle also discovers it
+          # directly from jniLibs; package the single shared copy once.
+          if "pickFirst 'lib/arm64-v8a/libFLAC.so'" not in text:
+              text = text.replace(
+                  "    buildTypes {",
+                  "    packagingOptions {\n        pickFirst 'lib/arm64-v8a/libFLAC.so'\n    }\n\n    buildTypes {",
+                  1
+              )
           if "applicationId 'com.s22winemu.app'" not in text:
               raise SystemExit("Could not safely rebrand Android applicationId")
           gradle.write_text(text)
