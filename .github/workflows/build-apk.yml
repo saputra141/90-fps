@@ -88,12 +88,21 @@ jobs:
           text = text.replace("applicationId 'com.winlator'", "applicationId 'com.s22winemu.app'")
           text = text.replace("versionCode 28", f"versionCode {int(os.environ['BUILD_NUMBER'])}")
           text = text.replace('versionName "11.1"', f'versionName "0.2.{os.environ["BUILD_NUMBER"]}"')
-          # CMake imports libFLAC from jniLibs and Gradle also discovers it
-          # directly from jniLibs; package the single shared copy once.
+          # Some native libraries are exposed both through jniLibs and CMake
+          # IMPORTED targets. Keep one packaged copy of each duplicated ARM64
+          # library so AGP's MergeNativeLibs task can complete.
+          packaging = """    packagingOptions {
+                  pickFirst 'lib/arm64-v8a/libFLAC.so'
+                  pickFirst 'lib/arm64-v8a/libfluidsynth-assetloader.so'
+              }
+
+          """
           if "pickFirst 'lib/arm64-v8a/libFLAC.so'" not in text:
+              text = text.replace("    buildTypes {", packaging + "    buildTypes {", 1)
+          elif "libfluidsynth-assetloader.so" not in text:
               text = text.replace(
-                  "    buildTypes {",
-                  "    packagingOptions {\n        pickFirst 'lib/arm64-v8a/libFLAC.so'\n    }\n\n    buildTypes {",
+                  "        pickFirst 'lib/arm64-v8a/libFLAC.so'",
+                  "        pickFirst 'lib/arm64-v8a/libFLAC.so'\n        pickFirst 'lib/arm64-v8a/libfluidsynth-assetloader.so'",
                   1
               )
           if "applicationId 'com.s22winemu.app'" not in text:
