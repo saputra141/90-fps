@@ -110,17 +110,26 @@ jobs:
                   pickFirst 'lib/arm64-v8a/libFLAC.so'
                   pickFirst 'lib/arm64-v8a/libfluidsynth-assetloader.so'
                   pickFirst 'lib/arm64-v8a/libfluidsynth.so'
+                  pickFirst 'lib/arm64-v8a/libgio-2.0.so'
               }
 
           """
-          if "pickFirst 'lib/arm64-v8a/libFLAC.so'" not in text:
+          if "packagingOptions {" not in text:
               text = text.replace("    buildTypes {", packaging + "    buildTypes {", 1)
-          elif "libfluidsynth-assetloader.so" not in text:
-              text = text.replace(
-                  "        pickFirst 'lib/arm64-v8a/libFLAC.so'",
-                  "        pickFirst 'lib/arm64-v8a/libFLAC.so'\n        pickFirst 'lib/arm64-v8a/libfluidsynth-assetloader.so'",
-                  1
-              )
+          else:
+              for lib in [
+                  "libFLAC.so",
+                  "libfluidsynth-assetloader.so",
+                  "libfluidsynth.so",
+                  "libgio-2.0.so",
+              ]:
+                  rule = f"pickFirst 'lib/arm64-v8a/{lib}'"
+                  if rule not in text:
+                      text = text.replace(
+                          "    packagingOptions {",
+                          "    packagingOptions {\n        " + rule,
+                          1
+                      )
           if "applicationId 'com.s22winemu.app'" not in text:
               raise SystemExit("Could not safely rebrand Android applicationId")
           gradle.write_text(text)
